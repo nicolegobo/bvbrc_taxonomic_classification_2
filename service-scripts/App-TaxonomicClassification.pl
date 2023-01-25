@@ -7,7 +7,7 @@
 use Bio::KBase::AppService::AppScript;
 use Bio::KBase::AppService::ReadSet;
 use Bio::KBase::AppService::AppConfig qw(metagenome_dbs);
-use Bio::KBase::AppService::TaxonomicClassificationReport;
+use Bio::P3::TaxonomicClassification::Report;
 use IPC::Run;
 use Cwd;
 use File::Path 'make_path';
@@ -276,8 +276,8 @@ sub run_kraken_and_process_output
 
     if (open(my $out_fh, ">", "$output/TaxonomicReport.html"))
     {
-	Bio::KBase::AppService::TaxonomicClassificationReport::write_report($app->task_id, $params,
-									    "$output/report.txt", $output_name, $out_fh);
+	Bio::P3::TaxonomicClassification::Report::write_report($app->task_id, $params,
+							       "$output/report.txt", $output_name, $out_fh);
 	close($out_fh);
     }
 
@@ -314,10 +314,11 @@ sub preflight
     
     my $time = 60 * 60 * 10;
     my $pf = {
-	cpu => 8,
+	cpu => 6,
 	memory => $mem,
 	runtime => $time,
 	storage => 1.1 * ($comp_size + $uncomp_size),
+	policy_data => { constraint => 'kraken_db' }
     };
     return $pf;
 }
