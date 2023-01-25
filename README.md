@@ -1,2 +1,3 @@
-# p3_module_template
-Template repository for PATRIC release engineered modules.
+# Taxonomic Classification
+
+The BV-BRC taxonomic classificaiton applicaton.
