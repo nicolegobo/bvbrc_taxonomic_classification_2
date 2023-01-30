@@ -309,7 +309,7 @@ sub preflight
     #
     if (lc($params->{database}) eq 'kraken2')
     {
-	$mem = "100G";
+	$mem = "160G";
     }
     
     my $time = 60 * 60 * 10;
@@ -318,7 +318,7 @@ sub preflight
 	memory => $mem,
 	runtime => $time,
 	storage => 1.1 * ($comp_size + $uncomp_size),
-	policy_data => { constraint => 'kraken_db' }
+	policy_data => { constraint => 'kraken_db', partition => 'kraken_db' }
     };
     return $pf;
 }
