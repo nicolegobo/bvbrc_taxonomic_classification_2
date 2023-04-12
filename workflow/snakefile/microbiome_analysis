@@ -1,0 +1,161 @@
+
+#### running from service-script ####
+pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
+se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
+samples = pe_samples+se_samples
+print('snakefile command recieved - MICROBOIME ANALYSIS')
+configfile: "../workflow/snakefile/config.json"
+ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multi_sample_comp_table > multiqc
+
+rule all:
+    input:
+        expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples),
+        expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples),
+        'output/beta_diversity.csv',
+        expand('output/{sample}/{sample}_krona.html', sample=samples),
+        'output/multi_sample_krona.html',
+        expand('output/{sample}/{sample}_sankey.html', sample=samples),
+        'output/multi_sample_table.html',
+        'output/multiqc_report.html'
+
+rule bracken_abundance_estimation:
+    input:
+        # for running from perl
+        #k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+        k2report = '/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/super_holder_snakefile_restructure_3_21_2023/microbiome/samples/{sample}/kraken_output/{sample}_k2_report.txt'
+    params:
+        bracken_dir = 'output/{sample}/bracken_output',
+        # what should we do about the average read length? we could use 100,150,200,250,300,50,75
+        ave_read_length = '100',
+        # We set the level for abundance estimation to species
+        level_of_abundance_estimation = 's',
+        #minimum required reads in abundance estimation before preforming re-estimation
+        read_threshold = '10'
+    output:
+        bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
+    shell:
+        '''
+        mkdir -p {params.bracken_dir}
+
+        config[est_abundance] \
+            -i {input.k2report} \
+            -k k2protocol_db/database100mers.kmer_distrib \
+            -o {output.bracken_output} \
+            -l S \
+            --out-report {output.bracken_report} \
+            -t 10
+
+        '''
+rule calculate_alpha_diversity:
+    input:
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt',
+    output:
+        alpha_diversity_csv = 'output/{sample}/bracken_output/{sample}_alpha_diversity.csv'
+    shell:
+        '''
+        python config[alpha_diversity] \
+            -f {input.bracken_report} -a BP >> {output.alpha_diversity_csv}
+
+        python config[alpha_diversity]  \
+            -f {input.bracken_report} -a Sh >> {output.alpha_diversity_csv}
+
+        python config[alpha_diversity]  \
+            -f {input.bracken_report} -a F >> {output.alpha_diversity_csv}
+
+        python config[alpha_diversity] \
+            -f {input.bracken_report} -a Si >> {output.alpha_diversity_csv}
+
+        python config[alpha_diversity]  \
+            -f {input.bracken_report} -a ISi >> {output.alpha_diversity_csv}
+        
+        # add something to put all the .CSVs together 
+        '''
+rule calculate_beta_diversity:
+    input:
+        # using set so each sample appears only once 
+        bracken_outputs = set(expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples))
+    output:
+        beta_diversity_csv = 'output/beta_diversity.csv'
+    shell:
+        '''
+        config[beta_diversity] \
+        --input {input.bracken_outputs} \
+        --type bracken \
+        --level S \
+        > {output.beta_diversity_csv}
+        '''
+
+rule generate_sample_krona_plots:
+    input:
+        #bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt'
+        # running from perl
+        #k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+        k2report = '/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/super_holder_snakefile_restructure_3_21_2023/microbiome/samples/{sample}/kraken_output/{sample}_k2_report.txt'
+    params:
+        plots_dir = 'plots/'
+    output:
+        k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
+        krona_html = 'output/{sample}/{sample}_krona.html'
+    shell:
+        '''
+        mkdir -p {params.plots_dir}
+
+        python config[kreport2krona] \
+            --report-file {input.k2report} --output {output.k_text} \
+            --no-intermediate-ranks 
+
+
+        config[krona_ktImportText] \
+            {output.k_text} \
+            -o {output.krona_html}
+        '''
+
+rule generate_set_krona_plots:
+    input:
+        k_text = set(expand('output/{sample}/kraken_output/{sample}.b.krona.txt', sample=samples))
+    output:
+        set_krona_plot = 'output/multi_sample_krona.html'
+    shell:
+        '''
+        config[krona_ktImportText] \
+            {input.k_text} \
+            -o {output.set_krona_plot}
+        '''
+
+rule generate_sankey_plots:
+    input:
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt',
+    output:
+        sankey_plot = 'output/{sample}/{sample}_sankey.html'
+    shell: 
+        r'''
+        ../workflow/scripts/sankey_plot_gen.R --input {input.txt} --output {output.out} 
+        '''
+
+rule multi_sample_comp_table:
+    input:
+        k_text = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
+    params:
+        output_dir = 'output/'
+    output:
+        multi_comp = 'output/multi_sample_table.html'
+    shell:
+        r'''
+        ../workflow/scripts/pavian_multi_sample_comparsion.R --input {input.txt} --output_dir {parms.output_dir)
+        '''
+
+rule multiqc:
+    params:
+        landing_dir = 'output'
+    output:
+        'output/multiqc_report.html'
+    shell:
+        '''
+        config[multiqc] --version
+
+        config[multiqc] \
+            -c {config[multiqc_yml]} \
+            -o {params.landing_dir} --fullnames \
+            --comment 'This report contains information about the raw fastq files, host removed fastq files and kraken2 reports.'
+        '''

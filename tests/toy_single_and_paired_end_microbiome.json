@@ -1,0 +1,25 @@
+{
+    "srr_ids": [],
+    "output_file": "toy_pe",
+    "srr_libs": [],
+    "output_path": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service/paired_end/paried_end_4_5_2023",
+    "paired_end_libs": [
+	    {
+	        "read2": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service/input_fastqs/SRR12486971_2.fastq.gz",
+	        "read1": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service/input_fastqs/SRR12486971_1.fastq.gz"
+	    },
+    ],
+    "single_end_libs": [
+        {
+            "read": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service/input_fastqs/SRR1749214_1.fastq.gz",
+        },
+        {
+            "read": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service/input_fastqs/SRR1749214_2.fastq.gz",
+        }
+    ],
+    "algorithm": "Kraken2",
+    "input_type":"reads",
+    "database": "Kraken2",
+    "workflow_type": "microbiome",
+    "host": "Homo sapiens",
+}
