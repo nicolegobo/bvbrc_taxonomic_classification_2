@@ -3,7 +3,7 @@
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
 se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
-print('snakefile command recieved - PATHOGEN ANALYSIS')
+print('snakefile command recieved - MICROBOIME ANALYSIS')
 configfile: "../workflow/snakefile/config.json"
 ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multi_sample_comp_table > multiqc
 
