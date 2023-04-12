@@ -59,55 +59,57 @@ rule remove_host_dna:
     shell:
         '''
         mkdir -p bowtie2_dir
+    # temp command until the indices are sorted out
+    cp {input.r1} {output.out_r1}
+    cp {input.r2} {output.out_r2}
+    #     {config[bowtie2]} --version
+    #     {config[samtools]} --version
+    #     {config[bedtools]} --version
+    #     {config[gzip]} --version
 
-        {config[bowtie2]} --version
-        {config[samtools]} --version
-        {config[bedtools]} --version
-        {config[gzip]} --version
+    #     echo starting bowtie2......
 
-        echo starting bowtie2......
-
-        {config[bowtie2]} -p 12 -x /path/to/bowtie2/indices \
-            -1 {input.r1} \
-            -2 {input.r2} \
-            --un-conc-gz \
-            {params.bowtie2_dir}/{params.tmp_name} -S {output.sam}
+    #     {config[bowtie2]} -p 12 -x /path/to/bowtie2/indices \
+    #         -1 {input.r1} \
+    #         -2 {input.r2} \
+    #         --un-conc-gz \
+    #         {params.bowtie2_dir}/{params.tmp_name} -S {output.sam}
         
-        echo ending bowtie2......
-        echo starting sam to bam......
+    #     echo ending bowtie2......
+    #     echo starting sam to bam......
         
-        {config[samtools]} \
-            view -bS {output.sam} \
-            > {output.bam}
+    #     {config[samtools]} \
+    #         view -bS {output.sam} \
+    #         > {output.bam}
 
-        echo stopping sam to bam......
-        echo starting bam to unmapped bam......
+    #     echo stopping sam to bam......
+    #     echo starting bam to unmapped bam......
 
-        {config[samtools]} \
-            view -b -f 12 -F 256 \
-            {output.bam} \
-            > {output.unmapped_bam}
+    #     {config[samtools]} \
+    #         view -b -f 12 -F 256 \
+    #         {output.bam} \
+    #         > {output.unmapped_bam}
 
-        echo stopping bam to unmapped bam......
-        echo starting unmapped bam to sorted bam......
+    #     echo stopping bam to unmapped bam......
+    #     echo starting unmapped bam to sorted bam......
 
-        {config[samtools]} \
-            sort \
-            -n {output.unmapped_bam} \
-            -o {output.sorted_bam}
+    #     {config[samtools]} \
+    #         sort \
+    #         -n {output.unmapped_bam} \
+    #         -o {output.sorted_bam}
 
-       echo stopping unmapped bam to sorted bam......
-       echo starting sorted bam to bam to fastq......
+    #    echo stopping unmapped bam to sorted bam......
+    #    echo starting sorted bam to bam to fastq......
 
-        {config[bedtools]} bamtofastq \
-            -i {output.sorted_bam} \
-            -fq {params.fq_r1} -fq2 {params.fq_r2}
+    #     {config[bedtools]} bamtofastq \
+    #         -i {output.sorted_bam} \
+    #         -fq {params.fq_r1} -fq2 {params.fq_r2}
 
-       echo stopping sorted bam to bam to fastq......
-       echo starting fastq to fastq.gz......
+    #    echo stopping sorted bam to bam to fastq......
+    #    echo starting fastq to fastq.gz......
 
-        {config[gzip]} {params.fq_r1}
-        {config[gzip]} {params.fq_r2}
+    #     {config[gzip]} {params.fq_r1}
+    #     {config[gzip]} {params.fq_r2}
         '''
 
 rule fastqc_on_host_removed_reads:
