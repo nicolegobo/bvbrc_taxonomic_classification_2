@@ -82,7 +82,7 @@ sub process_read_input
 
     my $json_string = encode_json($params);
     # pushing the wrapper command
-    print('printing before the command');
+    print('Starting the python wrapper....');
     @cmd = ("../workflow/snakefile/wrapper.py");
             push(@cmd,$json_string);
 

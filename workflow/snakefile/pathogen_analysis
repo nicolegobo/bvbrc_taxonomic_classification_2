@@ -1,13 +1,11 @@
 
-
-
-
-
+import sys
 #### running from service-script ####
-pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
+pe_samples = glob_wildcards('staging/pe_reads/{sample}_R{read_num}.fastq.gz').sample
 se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
-print('snakefile command recieved - PATHOGEN ANALYSIS')
+msg = 'snakefile command recieved - PATHOGEN ANALYSIS \n'
+sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
 ruleorder: generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multi_sample_comp_table > multiqc
 
@@ -18,7 +16,6 @@ rule all:
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
         'output/multi_sample_table.html',
         'output/multiqc_report.html'
-
 
 rule generate_sample_krona_plots:
     input:

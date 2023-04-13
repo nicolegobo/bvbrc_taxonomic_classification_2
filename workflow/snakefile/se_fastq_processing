@@ -1,8 +1,8 @@
 
 #### running from service-script ####
 samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
-
-print('snakefile command recieved - SINGLE END FASTQ PROCESSING')
+msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING'
+sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
 ruleorder: fastqc_raw_reads > remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 
@@ -29,7 +29,6 @@ rule fastqc_raw_reads:
         mkdir -p {params.out}
         mkdir -p {params.fastqc_dir}
 
-
         {config[fastqc]} --version
         
         {config[fastqc]} {input.raw_read} \
@@ -38,6 +37,28 @@ rule fastqc_raw_reads:
         mv {params.fastqc_dir}/{wildcards.sample}_fastqc.html {output.fastqc_html}
         mv {params.fastqc_dir}/{wildcards.sample}_fastqc.zip {output.fastqc_zip}
         '''
+rule temp_remove_host_dna:
+    input:
+        raw_read = 'staging/{sample}.fastq.gz',
+    params:
+        bowtie2_dir = 'output/{sample}/bowtie2_results',
+        tmp_name = '{sample}_host_removed',
+        fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq',
+
+    output:
+        out_fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz'
+
+    shell:
+        '''
+        mkdir -p bowtie2_dir
+        # temp command until the indices are sorted out
+        cp {input.raw_read} {output.out_fq_hr}
+            {config[bowtie2]} --version
+            {config[samtools]} --version
+            {config[bedtools]} --version
+            {config[gzip]} --version
+        '''
+
 rule remove_host_dna:
     input:
         raw_read = 'staging/{sample}.fastq.gz',
@@ -47,62 +68,59 @@ rule remove_host_dna:
         fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq',
 
     output:
-        # sam = 'output/{sample}/bowtie2_results/{sample}_mapped_and_unmapped.sam',
-        # bam = 'output/{sample}/bowtie2_results/{sample}_mapped_and_unmapped.bam',
-        # unmapped_bam = 'output/{sample}/bowtie2_results/{sample}_both_ends_unmapped.bam',
-        # sorted_bam = 'output/{sample}/bowtie2_results/{sample}_both_ends_unmapped_sorted.bam',
-        out_fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz'
+        sam = 'output/{sample}/bowtie2_results/{sample}_mapped_and_unmapped.sam',
+        bam = 'output/{sample}/bowtie2_results/{sample}_mapped_and_unmapped.bam',
+        unmapped_bam = 'output/{sample}/bowtie2_results/{sample}_both_ends_unmapped.bam',
+        sorted_bam = 'output/{sample}/bowtie2_results/{sample}_both_ends_unmapped_sorted.bam',
+        # out_fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz'
 
     shell:
         '''
-    mkdir -p bowtie2_dir
-    # temp command until the indices are sorted out
-    cp {input.raw_read} {output.out_fq_hr}
+        mkdir -p bowtie2_dir
+        {config[bowtie2]} --version
+        {config[samtools]} --version
+        {config[bedtools]} --version
+        {config[gzip]} --version
 
-    #     {config[bowtie2]} --version
-    #     {config[samtools]} --version
-    #     {config[bedtools]} --version
-    #     {config[gzip]} --version
+        echo starting bowtie2......
 
-    #     echo starting bowtie2......
-
-    #     {config[bowtie2]} -p 12 -x /path/to/bowtie2/indices
-    #         -U {input.raw_read} -S {output.sam}
+        {config[bowtie2]} -p 12 -x /path/to/bowtie2/indices
+            -U {input.raw_read} -S {output.sam}
         
-    #     echo ending bowtie2......
-    #     echo starting sam to bam......
+        echo ending bowtie2......
+        echo starting sam to bam......
         
-    #     {config[samtools]} \
-    #         view -bS {output.sam} \
-    #         > {output.bam}
+        {config[samtools]} \
+            view -bS {output.sam} \
+            > {output.bam}
 
-    #     echo stopping sam to bam......
-    #     echo starting bam to unmapped bam......
+        echo stopping sam to bam......
+        echo starting bam to unmapped bam......
 
-    #     {config[samtools]} \
-    #         view -b -f 12 -F 256 \
-    #         {output.bam} \
-    #         > {output.unmapped_bam}
+        {config[samtools]} \
+            view -b -f 12 -F 256 \
+            {output.bam} \
+            > {output.unmapped_bam}
 
-    #     echo stopping bam to unmapped bam......
-    #     echo starting unmapped bam to sorted bam......
+        echo stopping bam to unmapped bam......
+        echo starting unmapped bam to sorted bam......
 
-    #     {config[samtools]} \
-    #         sort \
-    #         -n {output.unmapped_bam} \
-    #         -o {output.sorted_bam}
+        {config[samtools]} \
+            sort \
+            -n {output.unmapped_bam} \
+            -o {output.sorted_bam}
 
-    #    echo stopping unmapped bam to sorted bam......
-    #    echo starting sorted bam to bam to fastq......
+       echo stopping unmapped bam to sorted bam......
+       echo starting sorted bam to bam to fastq......
 
-    #     {config[bedtools]} bamtofastq \
-    #         -i {output.sorted_bam} \
-    #         -fq {params.fq_hr}
+        {config[bedtools]} bamtofastq \
+            -i {output.sorted_bam} \
+            -fq {params.fq_hr}
 
-    #    echo stopping sorted bam to bam to fastq......
-    #    echo starting fastq to fastq.gz......
+       echo stopping sorted bam to bam to fastq......
+       echo starting fastq to fastq.gz......
 
-    #     {config[gzip]} {params.fq_hr}
+        {config[gzip]} {params.fq_hr}
         '''
 
 rule fastqc_on_host_removed_reads:
@@ -138,6 +156,7 @@ rule classify_with_kraken:
             --threads 8 \
             --minimum-hit-groups 3 \
             --report-minimizer-data \
+            --memory-mapping \
             --report {output.k2report} \
             {input.clean_se} \
             --output {output.k2_output}
