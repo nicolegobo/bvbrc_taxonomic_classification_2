@@ -1,5 +1,6 @@
 {
     "alpha_diversity": "/opt/patric-common/runtime/bin/alpha_diversity.py",
+    "alpha_stats_cleanup": "../workflow/scripts/alpha_stats_cleanup.py",
     "bedtools": "/opt/patric-common/runtime/bin/bedtools",
     "beta_diversity": "/opt/patric-common/runtime/bin/beta_diversity.py",
     "bowtie2": "/opt/patric-common/runtime/bin/bowtie2",
@@ -9,9 +10,10 @@
     "kraken2": "/opt/patric-common/runtime/bin/kraken2",
     "krona_ktImportText": "/opt/patric-common/runtime/bin/ktImportText",
     "kreport2krona": "/opt/patric-common/runtime/bin/kreport2krona.py",
+    "multi_comp_script": "../workflow/scripts/pavian_multi_sample_comparsion.R",
     "multiqc": "/opt/patric-common/runtime/bin/multiqc",
     "multiqc_yml": "/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/workflow/multiqc_config.yaml",
     "raw_data_dir": "/home/nbowers/bvbrc-dev/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/staging",
     "samtools": "/opt/patric-common/runtime/samtools-1.11/bin/samtools",
-    "working_dir": "/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/pathogen"
+    "sankey_script": "../workflow/scripts/sankey_plot_gen.R",
 }

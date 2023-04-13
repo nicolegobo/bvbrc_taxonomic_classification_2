@@ -21,16 +21,11 @@ rule all:
 
 rule bracken_abundance_estimation:
     input:
-        # for running from perl
-        #k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
-        k2report = '/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/super_holder_snakefile_restructure_3_21_2023/microbiome/samples/{sample}/kraken_output/{sample}_k2_report.txt'
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     params:
         bracken_dir = 'output/{sample}/bracken_output',
-        # what should we do about the average read length? we could use 100,150,200,250,300,50,75
         ave_read_length = '100',
-        # We set the level for abundance estimation to species
         level_of_abundance_estimation = 's',
-        #minimum required reads in abundance estimation before preforming re-estimation
         read_threshold = '10'
     output:
         bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
@@ -46,11 +41,13 @@ rule bracken_abundance_estimation:
             -l S \
             --out-report {output.bracken_report} \
             -t 10
-
         '''
+
 rule calculate_alpha_diversity:
     input:
         bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt',
+    params:
+        temp_alpha_diversity_csv = '{sample}_alpha_diversity_tmp.csv'
     output:
         alpha_diversity_csv = 'output/{sample}/bracken_output/{sample}_alpha_diversity.csv'
     shell:
@@ -69,9 +66,12 @@ rule calculate_alpha_diversity:
 
         python config[alpha_diversity]  \
             -f {input.bracken_report} -a ISi >> {output.alpha_diversity_csv}
-        
-        # add something to put all the .CSVs together 
+
+        python config[alpha_clean_up] {input.bracken_report} {params.temp_alpha_diversity_csv}
+
+        mv {sample}_alpha_diversity_tmp.csv {input.bracken_report}
         '''
+
 rule calculate_beta_diversity:
     input:
         # using set so each sample appears only once 
@@ -89,23 +89,14 @@ rule calculate_beta_diversity:
 
 rule generate_sample_krona_plots:
     input:
-        #bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt'
-        # running from perl
-        #k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
-        k2report = '/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/super_holder_snakefile_restructure_3_21_2023/microbiome/samples/{sample}/kraken_output/{sample}_k2_report.txt'
-    params:
-        plots_dir = 'plots/'
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     output:
         k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        mkdir -p {params.plots_dir}
-
         python config[kreport2krona] \
-            --report-file {input.k2report} --output {output.k_text} \
-            --no-intermediate-ranks 
-
+            --report-file {input.k2report} --output {output.k_text}
 
         config[krona_ktImportText] \
             {output.k_text} \
@@ -131,7 +122,7 @@ rule generate_sankey_plots:
         sankey_plot = 'output/{sample}/{sample}_sankey.html'
     shell: 
         r'''
-        ../workflow/scripts/sankey_plot_gen.R --input {input.txt} --output {output.out} 
+        config[sankey_script] --input {input.txt} --output {output.out} 
         '''
 
 rule multi_sample_comp_table:
@@ -143,7 +134,7 @@ rule multi_sample_comp_table:
         multi_comp = 'output/multi_sample_table.html'
     shell:
         r'''
-        ../workflow/scripts/pavian_multi_sample_comparsion.R --input {input.txt} --output_dir {parms.output_dir)
+        config[multi_comp_script] --input {input.txt} --output_dir {parms.output_dir)
         '''
 
 rule multiqc:

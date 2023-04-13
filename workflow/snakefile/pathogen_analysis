@@ -1,4 +1,3 @@
-
 import sys
 #### running from service-script ####
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_R{read_num}.fastq.gz').sample
@@ -26,8 +25,7 @@ rule generate_sample_krona_plots:
     shell:
         '''
         python {config[kreport2krona]} \
-            --report-file {input.k2report} --output {output.k_text} \
-            --no-intermediate-ranks 
+            --report-file {input.k2report} --output {output.k_text}
 
         {config[krona_ktImportText]} \
             {output.k_text} \
@@ -37,16 +35,10 @@ rule generate_sample_krona_plots:
 rule generate_set_krona_plots:
     input:
         k_text = set(expand('output/{sample}/kraken_output/{sample}.b.krona.txt', sample=samples))
-        #k_text = expand('output/{sample}/kraken_output/{sample}.b.krona.txt', sample=samples)
-
-    params:
-        plots_dir = 'output/'
     output:
         set_krona_plot = 'output/multi_sample_krona.html'
     shell:
         '''
-        mkdir -p {params.plots_dir}
-
         {config[krona_ktImportText]} \
             {input.k_text} \
             -o {output.set_krona_plot}
@@ -59,7 +51,7 @@ rule generate_sankey_plots:
         sankey_plot = 'output/{sample}/{sample}_sankey.html'
     shell: 
         r'''
-        ../workflow/scripts/sankey_plot_gen.R --input {input.txt} --output {output.out} 
+        config[sankey_script] --input {input.txt} --output {output.out} 
         '''
 
 rule multi_sample_comp_table:
@@ -71,7 +63,7 @@ rule multi_sample_comp_table:
         multi_comp = 'output/multi_sample_table.html'
     shell:
         r'''
-        ../workflow/scripts/pavian_multi_sample_comparsion.R --input {input.txt} --output_dir {parms.output_dir)
+        config[multi_comp_script] --input {input.txt} --output_dir {parms.output_dir)
         '''
     
 rule multiqc:

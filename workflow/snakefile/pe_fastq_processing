@@ -5,6 +5,7 @@ read_nums = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").rea
 msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING \n'
 sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
+# temp rule order
 #ruleorder: fastqc_raw_reads > remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 ruleorder: fastqc_raw_reads > temp_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 
@@ -17,8 +18,7 @@ rule all:
 
 rule fastqc_raw_reads:
     input:
-        #raw_read = 'staging/pe_reads/{sample}_R{read_num}.fastq.gz',
-        raw_read = '/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/service-scripts/staging/pe_reads/{sample}_R{read_num}.fastq.gz'
+        raw_read = 'staging/pe_reads/{sample}_R{read_num}.fastq.gz',
     params:
         fastqc_dir = 'output/{sample}/fastqc_results/raw_reads',
         out = 'output'
@@ -38,6 +38,7 @@ rule fastqc_raw_reads:
         mv {params.fastqc_dir}/{wildcards.sample}_{wildcards.read_num}_fastqc.html {output.fastqc_html}
         mv {params.fastqc_dir}/{wildcards.sample}_{wildcards.read_num}_fastqc.zip {output.fastqc_zip}
         '''
+
 rule temp_remove_host_dna:
     input:
         r1 = 'staging/pe_reads/{sample}_R1.fastq.gz',
@@ -47,7 +48,6 @@ rule temp_remove_host_dna:
     output:
         out_r1 = 'output/{sample}/bowtie2_results/{sample}_host_removed_R1.fastq.gz',
         out_r2 = 'output/{sample}/bowtie2_results/{sample}_host_removed_R2.fastq.gz'
-
     shell:
         '''
         mkdir -p bowtie2_dir
@@ -58,6 +58,7 @@ rule temp_remove_host_dna:
         {config[bedtools]} --version
         {config[gzip]} --version
         '''
+
 rule remove_host_dna:
     input:
         r1 = 'staging/pe_reads/{sample}_R1.fastq.gz',
@@ -74,7 +75,6 @@ rule remove_host_dna:
         sorted_bam = 'output/{sample}/bowtie2_results/{sample}_both_ends_unmapped_sorted.bam',
         # out_r1 = 'output/{sample}/bowtie2_results/{sample}_host_removed_R1.fastq.gz',
         # out_r2 = 'output/{sample}/bowtie2_results/{sample}_host_removed_R2.fastq.gz'
-
     shell:
         '''
         mkdir -p bowtie2_dir
@@ -147,6 +147,7 @@ rule fastqc_on_host_removed_reads:
         {config[fastqc]} {input.clean_read} \
         -o {params.fastqc_dir} -q
         '''
+
 rule classify_with_kraken:
     input:
         clean_r1 = 'output/{sample}/bowtie2_results/{sample}_host_removed_R1.fastq.gz',
