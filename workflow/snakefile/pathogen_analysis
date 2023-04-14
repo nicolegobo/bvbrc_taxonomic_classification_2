@@ -13,7 +13,7 @@ rule all:
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         'output/multi_sample_krona.html',
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
-        'output/multi_sample_table.html',
+        'output/multisample_comparison.html',
         'output/multiqc_report.html'
 
 rule generate_sample_krona_plots:
@@ -51,7 +51,7 @@ rule generate_sankey_plots:
         sankey_plot = 'output/{sample}/{sample}_sankey.html'
     shell: 
         r'''
-        config[sankey_script] --input {input.txt} --output {output.out} 
+        ../workflow/scripts/sankey_plot_gen.R --input {input.k2report} --output {output.sankey_plot}
         '''
 
 rule multi_sample_comp_table:
@@ -60,17 +60,18 @@ rule multi_sample_comp_table:
     params:
         output_dir = 'output/'
     output:
-        multi_comp = 'output/multi_sample_table.html'
+        multi_comp = 'output/multisample_comparison.html'
     shell:
         r'''
-        config[multi_comp_script] --input {input.txt} --output_dir {parms.output_dir)
+        ../workflow/scripts/pavian_multi_sample_comparsion.R --input "{input.k_text}" --output_dir {params.output_dir}
         '''
     
 rule multiqc:
+    input:
+        multiqc_config = '../workflow/multiqc_config.yaml'
     params:
         landing_dir = 'output',
         tmp_report_dir = 'output/tmp_k2_reports/'
-
     output:
         'output/multiqc_report.html'
     shell:
@@ -78,7 +79,7 @@ rule multiqc:
         {config[multiqc]} --version
 
         {config[multiqc]} . \
-            -c {config[multiqc_yml]} \
+            -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
-            --comment 'This report contains information about the raw fastq files, host removed fastq files and kraken2 reports.'
+            --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
         '''

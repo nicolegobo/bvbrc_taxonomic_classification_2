@@ -13,22 +13,33 @@ xargs<- parser$parse_args()
 
 ### Get sample names from input files to name columns of report ###
 input_list <- unlist(strsplit(xargs$input, " "))
+
 # Initialize an empty list
 sample_name_list <- list()
+input_file_list <- list()
 for (file in input_list) {
-   # get file name
+  if (substring(file, nchar(file)-2, nchar(file)) == "txt") {
+   input_file_list <- c(input_file_list, file)
+  # get file name
   pattern <- "^(.*/)?([^/]*)_k2_report\\.txt$"
   sample_name <- sub(pattern, "\\2", file)
   # append to list 
   sample_name_list <- c(sample_name_list, sample_name)
+  } else {
+   next
+  }
 }
-reports <- pavian::read_reports(input_list)
+
+# Convert the list to a character vector
+input_file_vector <- unlist(input_file_list)
+reports <- pavian::read_reports(input_file_vector)
 
 ### Prep strings for output files
 out_file_path <- xargs$output
 multisample_comparison_html <- paste0(out_file_path, 'multisample_comparison.html')
 summary_table_html <- paste0(out_file_path, 'summary_table.html')
 summary_table_csv <- paste0(out_file_path, 'summary_table.CSV')
+
 
 ### this is where the analysis begins
 ### from pavain https://github.com/fbreitwieser/pavian

@@ -158,7 +158,7 @@ rule classify_with_kraken:
             --minimum-hit-groups 3 \
             --report-minimizer-data \
             --memory-mapping \
-            --report {output.k2report} \
             {input.clean_se} \
+            --report {output.k2report} \
             --output {output.k2_output}
         '''

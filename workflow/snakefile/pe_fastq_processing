@@ -35,8 +35,12 @@ rule fastqc_raw_reads:
         {config[fastqc]} {input.raw_read} \
         -o {params.fastqc_dir} -q
 
-        mv {params.fastqc_dir}/{wildcards.sample}_{wildcards.read_num}_fastqc.html {output.fastqc_html}
-        mv {params.fastqc_dir}/{wildcards.sample}_{wildcards.read_num}_fastqc.zip {output.fastqc_zip}
+        echo {params.fastqc_dir}/{wildcards.sample}_{wildcards.read_num}_fastqc.html
+        echo {wildcards.sample}
+        echo {wildcards.read_num}
+
+        mv {params.fastqc_dir}/{wildcards.sample}_R{wildcards.read_num}_fastqc.html {output.fastqc_html}
+        mv {params.fastqc_dir}/{wildcards.sample}_R{wildcards.read_num}_fastqc.zip {output.fastqc_zip}
         '''
 
 rule temp_remove_host_dna:
