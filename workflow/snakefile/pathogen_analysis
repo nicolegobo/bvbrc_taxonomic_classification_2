@@ -6,15 +6,35 @@ samples = pe_samples+se_samples
 msg = 'snakefile command recieved - PATHOGEN ANALYSIS \n'
 sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
-ruleorder: generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multi_sample_comp_table > multiqc
+#ruleorder: generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multisample_comp_table > multiqc > clean_up
+
+
+print(len(samples))
+rule_all_list = [
+        expand('output/{sample}/{sample}_krona.html', sample=samples),
+        expand('output/{sample}/{sample}_sankey.html', sample=samples),
+        'output/multiqc_report.html',
+        expand('clean_up/{sample}/{sample}_sankey_files', sample=samples)
+        ]
+if len(samples) == 1:
+    print("preforming analysis for only one sample - DOES NOT INCLUDE MULTISAMPLE_COMPARISON.HTML")
+    ruleorder: generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multiqc > clean_up
+
+else:
+    print("MULTIPLE_samples")
+    rule_all_list.append('output/multisample_comparison.html')
+    rule_all_list.append('output/multisample_krona.html')
+    ruleorder: generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multisample_comp_table > multiqc > clean_up
 
 rule all:
     input:
-        expand('output/{sample}/{sample}_krona.html', sample=samples),
-        'output/multi_sample_krona.html',
-        expand('output/{sample}/{sample}_sankey.html', sample=samples),
-        'output/multisample_comparison.html',
-        'output/multiqc_report.html'
+        rule_all_list
+        # expand('output/{sample}/{sample}_krona.html', sample=samples),
+        # 'output/multisample_krona.html',
+        # expand('output/{sample}/{sample}_sankey.html', sample=samples),
+        #'output/multisample_comparison.html',
+        # 'output/multiqc_report.html',
+        # expand('clean_up/{sample}/{sample}_sankey_files', sample=samples)
 
 rule generate_sample_krona_plots:
     input:
@@ -36,7 +56,7 @@ rule generate_set_krona_plots:
     input:
         k_text = set(expand('output/{sample}/kraken_output/{sample}.b.krona.txt', sample=samples))
     output:
-        set_krona_plot = 'output/multi_sample_krona.html'
+        set_krona_plot = 'output/multisample_krona.html'
     shell:
         '''
         {config[krona_ktImportText]} \
@@ -53,8 +73,7 @@ rule generate_sankey_plots:
         r'''
         ../workflow/scripts/sankey_plot_gen.R --input {input.k2report} --output {output.sankey_plot}
         '''
-
-rule multi_sample_comp_table:
+rule multisample_comp_table:
     input:
         k_text = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
     params:
@@ -65,7 +84,6 @@ rule multi_sample_comp_table:
         r'''
         ../workflow/scripts/pavian_multi_sample_comparsion.R --input "{input.k_text}" --output_dir {params.output_dir}
         '''
-    
 rule multiqc:
     input:
         multiqc_config = '../workflow/multiqc_config.yaml'
@@ -82,4 +100,23 @@ rule multiqc:
             -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
+        '''
+
+rule clean_up:
+    params:
+        multiqc_dir = 'output/multiqc_data/',
+        multisample_comp_files = 'output/multisample_comparison_files/',
+        sankey_files = 'output/{sample}/{sample}_sankey_files/',
+        clean_up_dir = 'clean_up'
+    output:
+        cl_multiqc_dir = directory('clean_up/{sample}/multiqc_data'),
+        cl_multisample_comp_files = directory('clean_up/{sample}/multisample_comparison_files'),
+        cl_sankey_files = directory('clean_up/{sample}/{sample}_sankey_files')
+    shell:
+        '''
+        mkdir -p {params.clean_up_dir}
+
+        mv {params.multiqc_dir} {output.cl_multiqc_dir}
+        mv {params.multisample_comp_files} {output.cl_multisample_comp_files}
+        mv {params.sankey_files} {output.cl_sankey_files}
         '''
