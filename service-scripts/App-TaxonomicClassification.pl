@@ -132,55 +132,29 @@ sub preflight
 sub save_output_files
 {
     my($app, $output) = @_;
-    
-    my %suffix_map = (fastq => 'reads',
-		      txt => 'txt',
-		      out => 'txt',
-		      err => 'txt',
-		      html => 'html');
+    my %suffix_map = (
+        csv => 'csv',
+        err => 'txt',
+        html => 'html',
+        out => 'txt',
+        txt => 'txt',);
 
-    #
-    # Make a pass over the folder and compress any fastq files.
-    #
+    my @suffix_map = map { ("--map-suffix", "$_=$suffix_map{$_}") } keys %suffix_map;
+
     if (opendir(D, $output))
     {
-	while (my $f = readdir(D))
-	{
-	    my $path = "$output/$f";
-	    if (-f $path &&
-		($f =~ /\.fastq$/))
-	    {
-		my $rc = system("gzip", "-f", $path);
-		if ($rc)
-		{
-		    warn "Error $rc compressing $path";
-		}
-	    }
-	}
-    }
-    if (opendir(D, $output))
+    while (my $p = readdir(D))
     {
-	while (my $f = readdir(D))
-	{
-	    my $path = "$output/$f";
-
-	    my $p2 = $f;
-	    $p2 =~ s/\.gz$//;
-	    my($suffix) = $p2 =~ /\.([^.]+)$/;
-	    my $type = $suffix_map{$suffix} // "txt";
-	    $type = "unspecified" if $f eq 'output.txt.gz';
-
-	    if (-f $path)
-	    {
-		print "Save $path type=$type\n";
-		my $shock = -s $path > 10000 ? 1 : 0;
-		$app->workspace->save_file_to_file($path, {}, $app->result_folder . "/$f", $type, 1, $shock, $app->token->token);
-	    }
-	}
-	    
+        my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/", "ws:" . $app->result_folder);
+        # I don't think we want p
+        #my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/$p", "ws:" . $app->result_folder);
+        print "@cmd\n";
+        my $ok = IPC::Run::run(\@cmd);
+        if (!$ok)
+        {
+        warn "Error $? copying output with @cmd\n";
+        }
     }
-    else
-    {
-	warn "Cannot opendir $output: $!";
+    closedir(D);
     }
 }
