@@ -9,7 +9,7 @@ custom_logo_title: Bacterial and Viral Bioinformatics Resource Center
 module_order:
     - Kraken
     - fastqc:
-        name: "FastQC (host removed )"
+        name: "FastQC (host removed)"
         anchor: "fastqc_host removed"
         info: "This section of the report shows FastQC results after removing reads that aligned with the host genome."
         target: ""
