@@ -21,13 +21,11 @@ rule fastqc_raw_reads:
         raw_read = 'staging/pe_reads/{sample}_R{read_num}.fastq.gz',
     params:
         fastqc_dir = 'output/{sample}/fastqc_results/raw_reads',
-        out = 'output'
     output:
         fastqc_html = 'output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.html',
         fastqc_zip = 'output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.zip'
     shell:
         '''
-        mkdir -p {params.out}
         mkdir -p {params.fastqc_dir}
 
         {config[fastqc]} --version
@@ -54,7 +52,7 @@ rule temp_remove_host_dna:
         out_r2 = 'output/{sample}/bowtie2_results/{sample}_host_removed_R2.fastq.gz'
     shell:
         '''
-        mkdir -p bowtie2_dir
+        mkdir -p {params.bowtie2_dir}
     cp {input.r1} {output.out_r1}
     cp {input.r2} {output.out_r2}
         {config[bowtie2]} --version

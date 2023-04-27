@@ -26,7 +26,6 @@ rule fastqc_raw_reads:
         fastqc_zip = 'output/{sample}/fastqc_results/raw_reads/raw_{sample}_fastqc.zip'
     shell:
         '''
-        mkdir -p {params.out}
         mkdir -p {params.fastqc_dir}
 
         {config[fastqc]} --version
@@ -51,7 +50,7 @@ rule temp_remove_host_dna:
 
     shell:
         '''
-        mkdir -p bowtie2_dir
+        mkdir -p {params.bowtie2_dir}
         # temp command until the indices are sorted out
         cp {input.raw_read} {output.out_fq_hr}
         {config[bowtie2]} --version
@@ -76,7 +75,7 @@ rule remove_host_dna:
         # out_fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz'
     shell:
         '''
-        mkdir -p bowtie2_dir
+        mkdir -p {params.bowtie2_dir}
         {config[bowtie2]} --version
         {config[samtools]} --version
         {config[bedtools]} --version
