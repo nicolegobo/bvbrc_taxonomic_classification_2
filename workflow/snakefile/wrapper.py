@@ -134,7 +134,7 @@ def set_up_sample_dictionary(input_dict):
     # export the sample dictionary to .CSV
     with open('output/sample_key.csv', 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['key', 'value'])
+        writer.writerow(['User sample name', 'Analysis sample name'])
         for key, value in paired_sample_dict.items():
             writer.writerow([key, value])
         for key, value in single_end_sample_dict.items():
