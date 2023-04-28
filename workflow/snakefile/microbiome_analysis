@@ -28,6 +28,7 @@ else:
     rule_all_list.append('output/multisample_comparison.html')
     rule_all_list.append('output/multisample_krona.html')
     rule_all_list.append('output/beta_diversity.csv')
+    rule_all_list.append('clean_up/multisample_comparison_files')
     ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > clean_up_single_sample_html_files > multisample_comp_table > clean_up_multisample_html_files > multiqc
 
 
@@ -144,13 +145,16 @@ rule generate_sankey_plots:
 rule clean_up_single_sample_html_files:
     params:
         sankey_dir = 'output/{sample}/{sample}_sankey_files/',
+        k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
         clean_up_dir = 'clean_up'
     output:
-        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files')
+        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
+        cl_k_text = 'clean_up/{sample}.b.krona.txt'
     shell:
         '''
         mkdir -p {params.clean_up_dir}
         mv {params.sankey_dir} {output.cl_sankey_dir}
+        mv {params.k_text} {output.cl_k_text}
         '''
 
 rule multisample_comp_table:

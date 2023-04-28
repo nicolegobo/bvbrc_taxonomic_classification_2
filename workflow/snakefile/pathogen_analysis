@@ -82,13 +82,16 @@ rule generate_sankey_plots:
 rule clean_up_single_sample_html_files:
     params:
         sankey_dir = 'output/{sample}/{sample}_sankey_files/',
+        k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
         clean_up_dir = 'clean_up'
     output:
-        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files')
+        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
+        cl_k_text = 'clean_up/{sample}.b.krona.txt'
     shell:
         '''
         mkdir -p {params.clean_up_dir}
         mv {params.sankey_dir} {output.cl_sankey_dir}
+        mv {params.k_text} {output.cl_k_text}
         '''
 
 rule multisample_comp_table:
