@@ -141,6 +141,16 @@ def set_up_sample_dictionary(input_dict):
             writer.writerow([key, value])
     return 
 
+def load_hisat_indicies():
+    msg = "using ftp to get hisat indicies"
+    sys.stderr.write(msg)
+    # get hisat indicies
+    curl_cmd = 'curl -o ./hisat_indices ftp.patricbrc.org/host_genomes/9606/GRCh38.p13/GCF_000001405.39_GRCh38.p13_genomic.ht2.tar'
+    os.system(curl_cmd)
+    # cmd 2
+    tar_cmd = 'tar -xvf hisat_indices'
+    os.system(tar_cmd)
+    return
 
 # run the script from service-script/app_taxonomic_classification 
 def main(argv):
@@ -149,6 +159,7 @@ def main(argv):
     input_dict = format_inputs(raw_params)
     check_input_fastqs()
     set_up_sample_dictionary(input_dict)
+    load_hisat_indicies()
     run_snakefile(input_dict)
 
 
