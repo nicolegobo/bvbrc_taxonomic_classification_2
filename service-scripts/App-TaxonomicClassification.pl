@@ -148,7 +148,7 @@ sub save_output_files
         my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/", "ws:" . $app->result_folder);
         # I don't think we want p
         #my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/$p", "ws:" . $app->result_folder);
-        print "@cmd\n";
+        print STDERR "@cmd\n";
         my $ok = IPC::Run::run(\@cmd);
         if (!$ok)
         {
