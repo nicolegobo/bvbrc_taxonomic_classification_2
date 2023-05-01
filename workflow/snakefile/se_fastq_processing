@@ -4,14 +4,15 @@ samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING'
 sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
+
 # temp rule order
 #ruleorder: fastqc_raw_reads > remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
-ruleorder: fastqc_raw_reads > temp_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
+ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 
 rule all:
     input:
         expand('output/{sample}/fastqc_results/raw_reads/raw_{sample}_fastqc.html', sample=samples),
-        expand('output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz', sample=samples),
+        expand('output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz', sample=samples),
         expand('output/{sample}/fastqc_results/host_removed_reads/{sample}_host_removed_fastqc.html', sample=samples),
         expand('output/{sample}/kraken_output/{sample}_k2_output.txt', sample=samples),
 
@@ -37,94 +38,36 @@ rule fastqc_raw_reads:
         mv {params.fastqc_dir}/{wildcards.sample}_fastqc.zip {output.fastqc_zip}
         '''
 
-rule temp_remove_host_dna:
+
+rule hisat2_remove_host_dna:
     input:
         raw_read = 'staging/se_reads/{sample}.fastq.gz',
     params:
-        bowtie2_dir = 'output/{sample}/bowtie2_results',
+        hisat2_dir = 'output/{sample}/hisat2_results',
         tmp_name = '{sample}_host_removed',
-        fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq',
-
     output:
-        out_fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz'
-
+        sam = 'output/{sample}/hisat2_results/{sample}_aligned_reads.sam',
+        out = 'output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz',
     shell:
         '''
-        mkdir -p {params.bowtie2_dir}
-        # temp command until the indices are sorted out
-        cp {input.raw_read} {output.out_fq_hr}
-        {config[bowtie2]} --version
-        {config[samtools]} --version
-        {config[bedtools]} --version
-        {config[gzip]} --version
-        '''
+        mkdir -p {params.hisat2_dir}
 
-rule remove_host_dna:
-    input:
-        raw_read = 'staging/se_reads/{sample}.fastq.gz',
-    params:
-        bowtie2_dir = 'output/{sample}/bowtie2_results',
-        tmp_name = '{sample}_host_removed',
-        fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq',
+        {config[hisat2]} --version
 
-    output:
-        sam = 'output/{sample}/bowtie2_results/{sample}_mapped_and_unmapped.sam',
-        bam = 'output/{sample}/bowtie2_results/{sample}_mapped_and_unmapped.bam',
-        unmapped_bam = 'output/{sample}/bowtie2_results/{sample}_both_ends_unmapped.bam',
-        sorted_bam = 'output/{sample}/bowtie2_results/{sample}_both_ends_unmapped_sorted.bam',
-        # out_fq_hr = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz'
-    shell:
-        '''
-        mkdir -p {params.bowtie2_dir}
-        {config[bowtie2]} --version
-        {config[samtools]} --version
-        {config[bedtools]} --version
-        {config[gzip]} --version
+        echo "starting hisat2......"
 
-        echo starting bowtie2......
+        {config[hisat2]} -x GCF_000001405.39_GRCh38.p13_genomic \
+            -U {input.raw_read} \
+            --un-gz \
+            {params.tmp_name} -S {output.sam} \
+            --threads 12
 
-        {config[bowtie2]} -p 12 -x /path/to/bowtie2/indices
-            -U {input.raw_read} -S {output.sam}
-        
-        echo ending bowtie2......
-        echo starting sam to bam......
-        
-        {config[samtools]} \
-            view -bS {output.sam} \
-            > {output.bam}
-
-        echo stopping sam to bam......
-        echo starting bam to unmapped bam......
-
-        {config[samtools]} \
-            view -b -f 12 -F 256 \
-            {output.bam} \
-            > {output.unmapped_bam}
-
-        echo stopping bam to unmapped bam......
-        echo starting unmapped bam to sorted bam......
-
-        {config[samtools]} \
-            sort \
-            -n {output.unmapped_bam} \
-            -o {output.sorted_bam}
-
-       echo stopping unmapped bam to sorted bam......
-       echo starting sorted bam to bam to fastq......
-
-        {config[bedtools]} bamtofastq \
-            -i {output.sorted_bam} \
-            -fq {params.fq_hr}
-
-       echo stopping sorted bam to bam to fastq......
-       echo starting fastq to fastq.gz......
-
-        {config[gzip]} {params.fq_hr}
+        mv {params.tmp_name} {output.out}
         '''
 
 rule fastqc_on_host_removed_reads:
     input:
-        clean_read = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz',
+        clean_read = 'output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz',
     params:
         fastqc_dir = 'output/{sample}/fastqc_results/host_removed_reads'
     output:
@@ -142,7 +85,7 @@ rule fastqc_on_host_removed_reads:
 
 rule classify_with_kraken:
     input:
-        clean_se = 'output/{sample}/bowtie2_results/{sample}_host_removed.fastq.gz'
+        clean_se = 'output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz'
     params:
         kraken_dir = 'output/{sample}/kraken_output'
     output:
@@ -153,7 +96,7 @@ rule classify_with_kraken:
         mkdir -p {params.kraken_dir}
 
         {config[kraken2]} --db /vol/patric3/metagenome_dbs/kraken2 \
-            --threads 8 \
+            --threads 12 \
             --minimum-hit-groups 3 \
             --report-minimizer-data \
             --memory-mapping \

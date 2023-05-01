@@ -6,10 +6,7 @@ samples = pe_samples+se_samples
 msg = 'snakefile command recieved - PATHOGEN ANALYSIS \n'
 sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
-#ruleorder: generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > multisample_comp_table > multiqc > clean_up
 
-
-print(len(samples))
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
@@ -34,12 +31,6 @@ else:
 rule all:
     input:
         rule_all_list
-        # expand('output/{sample}/{sample}_krona.html', sample=samples),
-        # 'output/multisample_krona.html',
-        # expand('output/{sample}/{sample}_sankey.html', sample=samples),
-        #'output/multisample_comparison.html',
-        # 'output/multiqc_report.html',
-        # expand('clean_up/{sample}/{sample}_sankey_files', sample=samples)
 
 rule generate_sample_krona_plots:
     input:
