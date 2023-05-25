@@ -6,31 +6,31 @@
   "default_memory": "100G",
   "parameters": [
   {
-    "id": "host",
+    "id": "host_genome",
     "desc": "host genome",
     "required": 1,
     "default": "Homo sapiens",
-    "label": "Workflow Type",
+    "label": "Host Genome",
     "type": "enum",
     "enum": [
-        "Drosophila melanogaster strain y; cn bw sp",
-        "Sus scrofa",
-        "Mustela putorius furo",
-        "Homo sapiens",
-        "Macaca mulatta",
-        "Gallus gallus",
-        "Danio rerio strain Tuebingen",
-        "Caenorhabditis elegans",
-        "Rattus norvegicus",
-        "Mus musculus",
-        ]
+        "homo_sapiens",
+        "mus_musculus",
+        "rattus_norvegicus",
+        "caenorhabditis_elegans",
+        "drosophila_melanogaster_strain",
+        "danio_rerio_strain_tuebingen",
+        "gallus_gallus",
+        "macaca_mulatta",
+        "mustela_putorius_furo",
+        "sus_scrofa"
+    ]
   },
   {
-    "id": "workflow_type",
+    "id": "analysis_type",
     "desc": "Workflow type (pathogen / microbiome)",
     "required": 1,
-    "default": null,
-    "label": "Workflow Type",
+    "default": "microbiome",
+    "label": "Analysis Type",
     "type": "enum",
     "enum": [
     "pathogen",
@@ -41,13 +41,11 @@
     "id": "input_type",
     "desc": "Input type (reads / contigs)",
     "required": 1,
-    "default": null,
+    "default": "reads",
     "label": "Input Type",
     "type": "enum",
-    "enum": [
+    "enum":
       "reads",
-      "contigs"
-    ]
   },
   {
     "id": "paired_end_libs",
@@ -115,13 +113,10 @@
     "id": "database",
     "type": "enum",
     "label": "Database",
-    "default": "Kraken2",
+    "default": "bvbrc",
     "enum": [
-  "Default NT",
-  "Kraken2",
-  "Greengenes",
-  "RDP",
-  "SILVA"
+  "bvbrc",
+  "standard",
     ],
     "desc": "Target database",
     "required": 1
