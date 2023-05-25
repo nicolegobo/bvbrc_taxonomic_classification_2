@@ -1,5 +1,5 @@
 import sys
-#### running from service-script ####
+#### relative path from service-script ####
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_R{read_num}.fastq.gz').sample
 se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
@@ -14,7 +14,8 @@ rule_all_list = [
         expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
         'clean_up/multiqc_data',
         ]
-## this needs to be able to have just 1 single end or just one paired end - I think paired end will come in with 2 always - maybe go a more complex if 
+## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
+## multisample comparison and visualizations will either fail or be redundant if only one sample present
 if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
     msg = "preforming analysis for only one sample - DOES NOT INCLUDE MULTISAMPLE_COMPARISON.HTML"
     sys.stderr.write(msg)
@@ -94,7 +95,7 @@ rule multisample_comp_table:
         multi_comp = 'output/multisample_comparison.html',
     shell:
         r'''
-        ../workflow/scripts/pavian_multi_sample_comparsion.R --input "{input.k_text}" --output_dir {params.output_dir}
+        ../workflow/scripts/pavian_multisample_comparsion.R --input "{input.k_text}" --output_dir {params.output_dir}
         '''
 
 rule clean_up_multisample_html_files:

@@ -1,6 +1,6 @@
 # bracken command will fail until we run braken on bv-brc kraken db or switch to using the k2 default db with the bracken buld completed
 import sys
-#### running from service-script ####
+#### relative path from service-script ####
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
 se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
@@ -16,7 +16,8 @@ rule_all_list = [
         expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples),
         expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples),
         ]
-## this needs to be able to have just 1 single end or just one paired end - I think paired end will come in with 2 always - maybe go a more complex if 
+## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
+## multisample comparison and visualizations will either fail or be redundant if only one sample present
 if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
     msg = "preforming analysis for only one sample - DOES NOT INCLUDE multisample_comparison.html, multisample_krona.html"
     sys.stderr.write(msg)
@@ -105,67 +106,67 @@ rule calculate_beta_diversity:
 
 rule generate_sample_krona_plots:
     input:
-        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     output:
-        k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
+        b_txt = 'output/{sample}/bracken_output/{sample}.b.krona.txt',
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
         python {config[kreport2krona]} \
-            --report-file {input.k2report} --output {output.k_text}
+            --report-file {input.bracken_report} --output {output.b_txt}
 
         {config[krona_ktImportText]} \
-            {output.k_text} \
+            {output.b_txt} \
             -o {output.krona_html}
         '''
 
 rule generate_multisample_krona_plots:
     input:
-        k_text = set(expand('output/{sample}/kraken_output/{sample}.b.krona.txt', sample=samples))
+        b_txt = set(expand('output/{sample}/bracken_output/{sample}.b.krona.txt', sample=samples))
     output:
         set_krona_plot = 'output/multisample_krona.html'
     shell:
         '''
         {config[krona_ktImportText]} \
-            {input.k_text} \
+            {input.b_txt} \
             -o {output.set_krona_plot}
         '''
 
 rule generate_sankey_plots:
     input:
-        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt',
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     output:
         sankey_plot = 'output/{sample}/{sample}_sankey.html'
     shell: 
         r'''
-        ../workflow/scripts/sankey_plot_gen.R --input {input.k2report} --output {output.sankey_plot}
+        ../workflow/scripts/sankey_plot_gen.R --input {input.bracken_report} --output {output.sankey_plot}
         '''
 
 rule clean_up_single_sample_html_files:
     params:
         sankey_dir = 'output/{sample}/{sample}_sankey_files/',
-        k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
+        b_txt = 'output/{sample}/bracken_output/{sample}.b.krona.txt',
         clean_up_dir = 'clean_up'
     output:
         cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
-        cl_k_text = 'clean_up/{sample}.b.krona.txt'
+        cl_b_txt = 'clean_up/{sample}.b.krona.txt'
     shell:
         '''
         mkdir -p {params.clean_up_dir}
         mv {params.sankey_dir} {output.cl_sankey_dir}
-        mv {params.k_text} {output.cl_k_text}
+        mv {params.b_txt} {output.cl_b_txt}
         '''
 
 rule multisample_comp_table:
     input:
-        k_text = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
+        kraken2_report = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
     params:
         output_dir = 'output/'
     output:
         multi_comp = 'output/multisample_comparison.html'
     shell:
         r'''
-        ../workflow/scripts/pavian_multisample_comparsion.R --input "{input.txt}" --output_dir {params.output_dir}
+        ../workflow/scripts/pavian_multisample_comparsion.R --input "{input.kraken2_report}" --output_dir {params.output_dir}
         '''
 
 rule clean_up_multisample_html_files:

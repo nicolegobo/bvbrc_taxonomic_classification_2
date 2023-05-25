@@ -4,9 +4,6 @@ samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING'
 sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
-
-# temp rule order
-#ruleorder: fastqc_raw_reads > remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 
 rule all:
