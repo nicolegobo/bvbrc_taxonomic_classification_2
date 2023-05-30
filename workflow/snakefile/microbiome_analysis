@@ -1,36 +1,48 @@
+# bracken command will fail until we run braken on bv-brc kraken db or switch to using the k2 default db with the bracken buld completed
 import sys
-#### running from service-script ####
+#### relative path from service-script ####
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
 se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
-msg = 'snakefile command recieved - MICROBOIME ANALYSIS \n'
+msg = 'snakefile command recieved - MICROBOIME ANALYSIS. \n'
 sys.stderr.write(msg)
 configfile: "../workflow/snakefile/config.json"
-ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_set_krona_plots > generate_sankey_plots > multi_sample_comp_table > multiqc
+
+rule_all_list = [
+        expand('output/{sample}/{sample}_krona.html', sample=samples),
+        expand('output/{sample}/{sample}_sankey.html', sample=samples),
+        'output/multiqc_report.html',
+        expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
+        expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples),
+        expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples),
+        ]
+## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
+## multisample comparison and visualizations will either fail or be redundant if only one sample present
+if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
+    msg = "preforming analysis for only one sample - DOES NOT INCLUDE multisample_comparison.html, multisample_krona.html"
+    sys.stderr.write(msg)
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_sankey_plots >clean_up_single_sample_html_files > multiqc 
+else:
+    msg = "preforming analysis for multiple samples - INCLUDES multisample_comparison.html, multisample_krona.html"
+    sys.stderr.write(msg)
+    rule_all_list.append('output/multisample_comparison.html')
+    rule_all_list.append('output/multisample_krona.html')
+    rule_all_list.append('output/beta_diversity.csv')
+    rule_all_list.append('clean_up/multisample_comparison_files')
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > clean_up_single_sample_html_files > multisample_comp_table > clean_up_multisample_html_files > multiqc
+
 
 rule all:
     input:
-        expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples),
-        expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples),
-        'output/beta_diversity.csv',
-        expand('output/{sample}/{sample}_krona.html', sample=samples),
-        'output/multi_sample_krona.html',
-        expand('output/{sample}/{sample}_sankey.html', sample=samples),
-        'output/multi_sample_table.html',
-        'output/multiqc_report.html'
+        rule_all_list
 
 rule bracken_abundance_estimation:
     input:
-        # for running from perl
-        #k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
-        k2report = '/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/super_holder_snakefile_restructure_3_21_2023/microbiome/samples/{sample}/kraken_output/{sample}_k2_report.txt'
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     params:
         bracken_dir = 'output/{sample}/bracken_output',
-        # what should we do about the average read length? we could use 100,150,200,250,300,50,75
         ave_read_length = '100',
-        # We set the level for abundance estimation to species
         level_of_abundance_estimation = 's',
-        #minimum required reads in abundance estimation before preforming re-estimation
         read_threshold = '10'
     output:
         bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
@@ -39,39 +51,44 @@ rule bracken_abundance_estimation:
         '''
         mkdir -p {params.bracken_dir}
 
-        config[est_abundance] \
+        /opt/patric-common/runtime/bin/est_abundance.py \
             -i {input.k2report} \
-            -k k2protocol_db/database100mers.kmer_distrib \
+            -k /vol/patric3/metagenome_dbs/kraken2/database100mers.kmer_distrib \
             -o {output.bracken_output} \
             -l S \
             --out-report {output.bracken_report} \
             -t 10
-
         '''
+
 rule calculate_alpha_diversity:
     input:
-        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt',
+        bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
+    params:
+        temp_alpha_diversity_csv = '{sample}_alpha_diversity_tmp.csv'
     output:
         alpha_diversity_csv = 'output/{sample}/bracken_output/{sample}_alpha_diversity.csv'
     shell:
         '''
-        python config[alpha_diversity] \
-            -f {input.bracken_report} -a BP >> {output.alpha_diversity_csv}
+        python /opt/patric-common/runtime/bin/alpha_diversity.py \
+            -f {input.bracken_output} -a BP >> {output.alpha_diversity_csv}
 
-        python config[alpha_diversity]  \
-            -f {input.bracken_report} -a Sh >> {output.alpha_diversity_csv}
+        python /opt/patric-common/runtime/bin/alpha_diversity.py  \
+            -f {input.bracken_output} -a Sh >> {output.alpha_diversity_csv}
 
-        python config[alpha_diversity]  \
-            -f {input.bracken_report} -a F >> {output.alpha_diversity_csv}
+        python /opt/patric-common/runtime/bin/alpha_diversity.py  \
+            -f {input.bracken_output} -a F >> {output.alpha_diversity_csv}
 
-        python config[alpha_diversity] \
-            -f {input.bracken_report} -a Si >> {output.alpha_diversity_csv}
+        python /opt/patric-common/runtime/bin/alpha_diversity.py \
+            -f {input.bracken_output} -a Si >> {output.alpha_diversity_csv}
 
-        python config[alpha_diversity]  \
-            -f {input.bracken_report} -a ISi >> {output.alpha_diversity_csv}
-        
-        # add something to put all the .CSVs together 
+        python /opt/patric-common/runtime/bin/alpha_diversity.py  \
+            -f {input.bracken_output} -a ISi >> {output.alpha_diversity_csv}
+
+        python ../workflow/scripts/alpha_stats_cleanup.py {input.bracken_output} {params.temp_alpha_diversity_csv}
+
+        mv {wildcards.sample}_alpha_diversity_tmp.csv {output.alpha_diversity_csv}
         '''
+
 rule calculate_beta_diversity:
     input:
         # using set so each sample appears only once 
@@ -80,7 +97,7 @@ rule calculate_beta_diversity:
         beta_diversity_csv = 'output/beta_diversity.csv'
     shell:
         '''
-        config[beta_diversity] \
+        /opt/patric-common/runtime/bin/beta_diversity.py \
         --input {input.bracken_outputs} \
         --type bracken \
         --level S \
@@ -89,74 +106,99 @@ rule calculate_beta_diversity:
 
 rule generate_sample_krona_plots:
     input:
-        #bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt'
-        # running from perl
-        #k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
-        k2report = '/home/nbowers/bvbrc-build-240/dev_container/modules/bvbrc_taxonomic_classification/tests/required_data/super_holder_snakefile_restructure_3_21_2023/microbiome/samples/{sample}/kraken_output/{sample}_k2_report.txt'
-    params:
-        plots_dir = 'plots/'
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     output:
-        k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
+        b_txt = 'output/{sample}/bracken_output/{sample}.b.krona.txt',
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        mkdir -p {params.plots_dir}
+        python {config[kreport2krona]} \
+            --report-file {input.bracken_report} --output {output.b_txt}
 
-        python config[kreport2krona] \
-            --report-file {input.k2report} --output {output.k_text} \
-            --no-intermediate-ranks 
-
-
-        config[krona_ktImportText] \
-            {output.k_text} \
+        {config[krona_ktImportText]} \
+            {output.b_txt} \
             -o {output.krona_html}
         '''
 
-rule generate_set_krona_plots:
+rule generate_multisample_krona_plots:
     input:
-        k_text = set(expand('output/{sample}/kraken_output/{sample}.b.krona.txt', sample=samples))
+        b_txt = set(expand('output/{sample}/bracken_output/{sample}.b.krona.txt', sample=samples))
     output:
-        set_krona_plot = 'output/multi_sample_krona.html'
+        set_krona_plot = 'output/multisample_krona.html'
     shell:
         '''
-        config[krona_ktImportText] \
-            {input.k_text} \
+        {config[krona_ktImportText]} \
+            {input.b_txt} \
             -o {output.set_krona_plot}
         '''
 
 rule generate_sankey_plots:
     input:
-        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt',
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     output:
         sankey_plot = 'output/{sample}/{sample}_sankey.html'
     shell: 
         r'''
-        ../workflow/scripts/sankey_plot_gen.R --input {input.txt} --output {output.out} 
+        ../workflow/scripts/sankey_plot_gen.R --input {input.bracken_report} --output {output.sankey_plot}
         '''
 
-rule multi_sample_comp_table:
+rule clean_up_single_sample_html_files:
+    params:
+        sankey_dir = 'output/{sample}/{sample}_sankey_files/',
+        b_txt = 'output/{sample}/bracken_output/{sample}.b.krona.txt',
+        clean_up_dir = 'clean_up'
+    output:
+        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
+        cl_b_txt = 'clean_up/{sample}.b.krona.txt'
+    shell:
+        '''
+        mkdir -p {params.clean_up_dir}
+        mv {params.sankey_dir} {output.cl_sankey_dir}
+        mv {params.b_txt} {output.cl_b_txt}
+        '''
+
+rule multisample_comp_table:
     input:
-        k_text = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
+        kraken2_report = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
     params:
         output_dir = 'output/'
     output:
-        multi_comp = 'output/multi_sample_table.html'
+        multi_comp = 'output/multisample_comparison.html'
     shell:
         r'''
-        ../workflow/scripts/pavian_multi_sample_comparsion.R --input {input.txt} --output_dir {parms.output_dir)
+        ../workflow/scripts/pavian_multisample_comparsion.R --input "{input.kraken2_report}" --output_dir {params.output_dir}
+        '''
+
+rule clean_up_multisample_html_files:
+    params:
+        multisample_comp_dir = 'output/multisample_comparison_files'
+    output:
+        cl_multisample_comp_dir = directory('clean_up/multisample_comparison_files')
+    shell:
+        '''
+        mv {params.multisample_comp_dir} {output.cl_multisample_comp_dir}
         '''
 
 rule multiqc:
+    input:
+        multiqc_config = '../workflow/multiqc_config.yaml'
     params:
-        landing_dir = 'output'
+        landing_dir = 'output',
+        multiqc_dir = 'output/multiqc_data/',
+        clean_up_dir = 'clean_up'
     output:
-        'output/multiqc_report.html'
+        'output/multiqc_report.html',
+        cl_multiqc_dir = directory('clean_up/multiqc_data')
     shell:
         '''
-        config[multiqc] --version
+        {config[multiqc]} --version
 
-        config[multiqc] \
-            -c {config[multiqc_yml]} \
+        {config[multiqc]} . \
+            -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
-            --comment 'This report contains information about the raw fastq files, host removed fastq files and kraken2 reports.'
+            --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
+        
+        mkdir -p {params.clean_up_dir}
+
+        mv {params.multiqc_dir} {params.clean_up_dir}
         '''

@@ -1,0 +1,17 @@
+{
+    "analysis_type": "microbiome",
+    "database": "bvbrc",
+    "host_genome": "homo_sapiens",
+    "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification",
+    "output_file": "paired_2_samples_microbiome_bvbrc_db",
+    "paired_end_libs": [
+        {
+            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486981_1.fastq.gz",
+            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486981_2.fastq.gz"
+        },
+        {
+            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486983_1.fastq.gz",
+            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486983_2.fastq.gz"
+        }
+    ]
+}

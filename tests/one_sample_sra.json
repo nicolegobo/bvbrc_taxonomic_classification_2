@@ -1,0 +1,10 @@
+{
+    "analysis_type": "pathogen",
+    "database": "standard",
+    "host_genome": "homo_sapiens",
+    "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification",
+    "output_file": "SRR_1_sample",
+    "srr_ids": [
+        "SRR12486971"
+    ]
+}

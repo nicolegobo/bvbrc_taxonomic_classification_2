@@ -30,16 +30,10 @@ sub run_classification
     
     my @cmd;
     my @options;
-    
-    if ($params->{algorithm} ne 'Kraken2')
-    {
-	die "Only Kraken2 is supported currently";
-    }
-    
-    my %db_map = ('Kraken2' => 'kraken2',
-		  Greengenes => 'Greengenes',
-		  RDP => 'RDP',
-		  SILVA => 'SILVA');
+
+    my %db_map = (
+		  bvbrc => 'bvbrc',
+		  standard => 'standard');
     my $db_dir = $db_map{$params->{database}};
     if (!$db_dir)
     {
@@ -63,7 +57,6 @@ sub process_read_input
 
     my @cmd = @$cmd;
     my @options = @$options;
-
     my $readset = Bio::KBase::AppService::ReadSet->create_from_asssembly_params($params, 1);
     
     my($ok, $errs, $comp_size, $uncomp_size) = $readset->validate($app->workspace);
@@ -83,8 +76,10 @@ sub process_read_input
     my $json_string = encode_json($params);
     # pushing the wrapper command
     print('Starting the python wrapper....');
+
+    #### relative path from service-script dir ####
     @cmd = ("../workflow/snakefile/wrapper.py");
-            push(@cmd,$json_string);
+            push(@cmd, $json_string);
 
     print STDERR "Run: @cmd\n";
     my $ok = IPC::Run::run(\@cmd);
@@ -109,14 +104,17 @@ sub preflight
 	die "Readset failed to validate. Errors:\n\t" . join("\n\t", @$errs);
     }
 
-    my $mem = "32G";
+# this will require changes once we decide what to do about the databases
+    # my $mem = "32G";
+    my $mem = "160G";
+
     #
     # Kraken DB requires a lot more memory.
     #
-    if (lc($params->{database}) eq 'kraken2')
-    {
-	$mem = "160G";
-    }
+    # if (lc($params->{database}) eq 'bvbrc')
+    # {
+	# $mem = "160G";
+    # }
     
     my $time = 60 * 60 * 10;
     my $pf = {
@@ -132,55 +130,27 @@ sub preflight
 sub save_output_files
 {
     my($app, $output) = @_;
-    
-    my %suffix_map = (fastq => 'reads',
-		      txt => 'txt',
-		      out => 'txt',
-		      err => 'txt',
-		      html => 'html');
+    my %suffix_map = (
+        csv => 'csv',
+        err => 'txt',
+        html => 'html',
+        out => 'txt',
+        txt => 'txt',);
 
-    #
-    # Make a pass over the folder and compress any fastq files.
-    #
+    my @suffix_map = map { ("--map-suffix", "$_=$suffix_map{$_}") } keys %suffix_map;
+
     if (opendir(D, $output))
     {
-	while (my $f = readdir(D))
-	{
-	    my $path = "$output/$f";
-	    if (-f $path &&
-		($f =~ /\.fastq$/))
-	    {
-		my $rc = system("gzip", "-f", $path);
-		if ($rc)
-		{
-		    warn "Error $rc compressing $path";
-		}
-	    }
-	}
-    }
-    if (opendir(D, $output))
+    while (my $p = readdir(D))
     {
-	while (my $f = readdir(D))
-	{
-	    my $path = "$output/$f";
-
-	    my $p2 = $f;
-	    $p2 =~ s/\.gz$//;
-	    my($suffix) = $p2 =~ /\.([^.]+)$/;
-	    my $type = $suffix_map{$suffix} // "txt";
-	    $type = "unspecified" if $f eq 'output.txt.gz';
-
-	    if (-f $path)
-	    {
-		print "Save $path type=$type\n";
-		my $shock = -s $path > 10000 ? 1 : 0;
-		$app->workspace->save_file_to_file($path, {}, $app->result_folder . "/$f", $type, 1, $shock, $app->token->token);
-	    }
-	}
-	    
+        my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/", "ws:" . $app->result_folder);
+        print STDERR "saving files to workspace... @cmd\n";
+        my $ok = IPC::Run::run(\@cmd);
+        if (!$ok)
+        {
+        warn "Error $? copying output with @cmd\n";
+        }
     }
-    else
-    {
-	warn "Cannot opendir $output: $!";
+    closedir(D);
     }
 }
