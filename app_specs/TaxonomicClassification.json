@@ -47,6 +47,30 @@
     "enum":
       "reads",
   },
+  // {
+  //   "id": "paired_sample_id",
+  //   "required": 1,
+  //   "label": "id for the sample",
+  //   "desc": "Sample ID that will be used for filenames",
+  //   "default": "sample",
+  //   "type": "string"
+  // },
+  // {
+  //   "id": "single_sample_id",
+  //   "required": 1,
+  //   "label": "id for the sample",
+  //   "desc": "Sample ID that will be used for filenames",
+  //   "default": "sample",
+  //   "type": "string"
+  // },
+  // {
+  //   "id": "srr_sample_id",
+  //   "required": 1,
+  //   "label": "id for the sample",
+  //   "desc": "Sample ID that will be used for filenames",
+  //   "default": "sample",
+  //   "type": "string"
+  // },
   {
     "id": "paired_end_libs",
     "type": "group",
@@ -54,6 +78,14 @@
     "required": 0,
     "default": null,
     "group": [
+      {
+        "id": "paired_sample_id",
+        "required": 1,
+        "label": "id for the sample",
+        "desc": "Sample Id that will be used for filenames",
+        "default": "sample",
+        "type": "string"
+      },
       {
       "id": "read1",
       "required": 1,
@@ -73,30 +105,53 @@
     ]
   },
   {
-  "id": "single_end_libs",
-  "type": "group",
-  "allow_multiple": true,
-  "required": 0,
-  "default": null,
-  "group": [
-      {
-      "id": "read",
-      "required": 1,
-      "label": "Read file",
-      "desc": "FASTQ, FASTA or H5 file of reads",
-      "wstype": "ReadFile",
-      "type": "wstype"
-      },
+    "id": "single_end_libs",
+    "type": "group",
+    "allow_multiple": true,
+    "required": 0,
+    "default" : null,
+    "group": [
+        {
+            "id": "sample_id",
+            "required": 1,
+            "label": "id for the sample",
+            "desc": "Sample Id that will be used for filenames",
+            "default": "sample",
+            "type": "string"
+        },
+        {
+            "id": "read",
+            "required": 1,
+            "label": "Read file",
+            "desc": "Read file in FASTQ, FASTA, or BAM",
+            "wstype": "ReadFile",
+            "type": "wstype"
+        },
     ]
   },
   {
-    "id": "srr_ids",
-    "required": 0,
+    "id": "srr_libs",
+    "type": "group",
     "allow_multiple": true,
-    "default": null,
-    "label": "SRR ID",
-    "desc": "Sequence Read Archive (SRA) Run ID",
-    "type": "string"
+    "required": 0,
+    "default" : null,
+    "group": [
+        {
+            "id": "sample_id",
+            "required": 1,
+            "label": "id for the sample filename",
+            "desc": "Sample Id that will be used for filenames",
+            "default": "sample",
+            "type": "string"
+        },
+        {
+            "id": "srr_accession",
+            "required": 1,
+            "label": "SRR Accession",
+            "desc": "SRA Sample accession with SRR prefix",
+            "type": "string"
+        },
+    ]
   },
   {
     "id": "algorithm",

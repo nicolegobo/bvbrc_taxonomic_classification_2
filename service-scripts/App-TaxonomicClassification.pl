@@ -67,7 +67,7 @@ sub process_read_input
     }
     
     my $top = getcwd;
-    my $staging = "$top/staging";
+    my $staging = "$top/test_staging";
     my $output = "$top/output";
     make_path($staging, $output);
     $readset->localize_libraries($staging);
@@ -88,7 +88,7 @@ sub process_read_input
      die "wrapper command failed $?: @cmd";
     }
 
-    save_output_files($app, $output);
+    # save_output_files($app, $output);
 }
 
 sub preflight
