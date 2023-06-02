@@ -6,6 +6,7 @@
 
 use Bio::KBase::AppService::AppScript;
 use Bio::KBase::AppService::ReadSet;
+use File::Slurp;
 use IPC::Run;
 use Cwd;
 use File::Path 'make_path';
@@ -24,13 +25,6 @@ sub run_classification
 {
     my($app, $app_def, $raw_params, $params) = @_;
     
-    #
-    # Set up options for tool and database.
-    #
-    
-    my @cmd;
-    my @options;
-
     my %db_map = (
 		  bvbrc => 'bvbrc',
 		  standard => 'standard');
@@ -42,7 +36,7 @@ sub run_classification
     
     if ($params->{input_type} eq 'reads')
     {
-	process_read_input($app, $params, \@cmd, \@options);
+	process_read_input($app, $params);
     }
     else
     {
@@ -53,10 +47,8 @@ sub run_classification
 
 sub process_read_input
 {
-    my($app, $params, $cmd, $options) = @_;
+    my($app, $params) = @_;
 
-    my @cmd = @$cmd;
-    my @options = @$options;
     my $readset = Bio::KBase::AppService::ReadSet->create_from_asssembly_params($params, 1);
     
     my($ok, $errs, $comp_size, $uncomp_size) = $readset->validate($app->workspace);
@@ -77,9 +69,37 @@ sub process_read_input
     # pushing the wrapper command
     print('Starting the python wrapper....');
 
-    #### relative path from service-script dir ####
-    @cmd = ("../workflow/snakefile/wrapper.py");
-            push(@cmd, $json_string);
+    #
+    # Create json config file for the execution of this workflow.
+    # If we are in a production deployment, we can find the workflows
+    # by looking in $KB_TOP/workflows/app-name
+    # Otherwise they are in the module directory; this is indicated
+    # by the value of $KB_MODULE_DIR (note this is set for both
+    # deployed and dev-container builds; the deployment case
+    # is determined by the existence of $KB_TOP/workflows)
+    #
+
+    my %config_vars;
+    my $wf_dir = "$ENV{KB_TOP}/workflows";
+    if (! -d $wf_dir)
+    {
+	$wf_dir = "$ENV{KB_TOP}/modules/$ENV{KB_MODULE_DIR}/workflow";
+    }
+    -d $wf_dir or die "Workflow directory $wf_dir does not exist";
+
+    #
+    # Find snakemake. We need to put this in a standard location in the runtime but for now
+    # use this.
+    #
+    my $snakemake = "$ENV{KB_RUNTIME}/artic-ncov2019/bin/snakemake";
+    $config_vars{workflow_dir} = $wf_dir;
+    $config_vars{input_data_dir} = $staging;
+    $config_vars{output_data_dir} = $output;
+    $config_vars{snakemake} = $snakemake;
+    $config_vars{params} = $params;
+    write_file("$top/config.json", JSON::XS->new->pretty->canonical->encode(\%config_vars));
+
+    my @cmd = ("python3", "$wf_dir/snakefile/wrapper.py", "$top/config.json");
 
     print STDERR "Run: @cmd\n";
     my $ok = IPC::Run::run(\@cmd);
