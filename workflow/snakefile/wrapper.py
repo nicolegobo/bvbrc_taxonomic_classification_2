@@ -4,13 +4,14 @@ import glob
 import json 
 import os
 import sys
+import shutil
+import subprocess
 
-
-def check_input_fastqs():
+def check_input_fastqs(input_dir):
     input_paths =[]
     #### code block for checking the input fastqs ####
     ### relative path running from service-script ###
-    input_paths = list(glob.glob("staging/*fastq*"))
+    input_paths = list(glob.glob(f"{input_dir}/*fastq*"))
 
     zipped_fastqs = []
     # iterate over every file 
@@ -44,21 +45,22 @@ def format_inputs(raw_params):
     return input_dict
 
 # run the snakefile command
-def run_snakefile(input_dict):
+def run_snakefile(input_dict, config):
     # if there are paired end reads process them
-    SNAKEMAKE_PATH = '/opt/patric-common/runtime/artic-ncov2019/bin/snakemake'
+    input_dir = config['input_data_dir']
+    SNAKEMAKE_PATH = config['snakemake']
     ### relative path running from service-script ###
-    SNAKEFILE_DIR = '../workflow/snakefile/'
-    if os.path.exists('staging/pe_reads'):
+    SNAKEFILE_DIR = f"{config['workflow_dir']}/snakefile/"
+    if os.path.exists(f"{input_dir}/pe_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'pe_fastq_processing')
-        cmd = "{} \
-            --snakefile {} \
-            --use-singularity \
-            --verbose \
-            --printshellcmds \
-            --debug \
-            ".format(SNAKEMAKE_PATH, SNAKEFILE)
-        os.system(cmd)
+        cmd = [SNAKEMAKE_PATH,
+        "--snakefile",  SNAKEFILE,
+        "--use-singularity",
+        "--verbose",
+        "--printshellcmds",
+        "--debug"]
+        print(cmd)
+        subprocess.run(cmd)
 
     # if there are single end reads process them
     if os.path.exists('staging/se_reads'):
@@ -91,7 +93,7 @@ def run_snakefile(input_dict):
     return
 
 
-def set_up_sample_dictionary(input_dict):
+def set_up_sample_dictionary(input_dir, input_dict, output_dir):
     # set up the sample dictionary
     #### paired reads ####
     paired_sample_dict = {}
@@ -99,8 +101,9 @@ def set_up_sample_dictionary(input_dict):
         ws_paired_reads = []
         ws_paired_reads = input_dict['paired_end_libs']
         ### relative path running from service-script ###
-        pe_dir_command = 'mkdir -p staging/pe_reads'
-        os.system(pe_dir_command)
+        pe_path= f"{input_dir}/pe_reads"
+        os.makedirs(pe_path, exist_ok = True)
+
         for i in range(len(ws_paired_reads)):
             read1_filename = ws_paired_reads[i]['read1'].split('/')[-1]
             read2_filename = ws_paired_reads[i]['read2'].split('/')[-1]
@@ -110,10 +113,12 @@ def set_up_sample_dictionary(input_dict):
             paired_sample_dict[read1_filename] = pe_r1_samplename
             paired_sample_dict[read2_filename] = pe_r2_samplename
             ### commands for running from service-script ###
-            cp_pe_r1_command = ('cp staging/{} staging/pe_reads/{}').format(read1_filename, paired_sample_dict[read1_filename])
-            os.system(cp_pe_r1_command)
-            cp_pe_r2_command = ('cp staging/{} staging/pe_reads/{}').format(read2_filename, paired_sample_dict[read2_filename])
-            os.system(cp_pe_r2_command)
+            shutil.copy(f"{input_dir}/{read1_filename}", f"{input_dir}/pe_reads/{read1_filename}")
+            shutil.copy(f"{input_dir}/{read2_filename}", f"{input_dir}/pe_reads/{read2_filename}")
+            # cp_pe_r1_command = ('cp staging/{} staging/pe_reads/{}').format(read1_filename, paired_sample_dict[read1_filename])
+            # os.system(cp_pe_r1_command)
+            # cp_pe_r2_command = ('cp staging/{} staging/pe_reads/{}').format(read2_filename, paired_sample_dict[read2_filename])
+            # os.system(cp_pe_r2_command)
     
     #### single reads ####
     single_end_sample_dict = {}
@@ -131,7 +136,7 @@ def set_up_sample_dictionary(input_dict):
             cp_se_command = ('cp staging/{} staging/se_reads/{}').format(se_filename, single_end_sample_dict[se_filename])
             os.system(cp_se_command)
     # export the sample dictionary to .CSV
-    with open('output/sample_key.csv', 'w', newline='') as file:
+    with open(f"{output_dir}/sample_key.csv", 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['User sample name', 'Analysis sample name'])
         for key, value in paired_sample_dict.items():
@@ -157,23 +162,40 @@ def load_hisat_indicies(input_dict):
     msg = "using ftp to get hisat indicies for host {}".format(input_dict['host_genome'])
     sys.stderr.write(msg)
     # get hisat indicies
-    curl_cmd = 'curl -o hisat_indices_tar_file ftp.bvbrc.org/host_genomes{}'.format(host_dict[input_dict['host_genome']])
+    curl_cmd = ['curl', '-o', 'hisat_indices_tar_file', 'ftp.bvbrc.org/host_genomes{}'.format(host_dict[input_dict['host_genome']])];
     print(curl_cmd)
-    os.system(curl_cmd)
+    subprocess.run(curl_cmd);
     # cmd 2
-    tar_cmd = 'tar -xvf hisat_indices_tar_file'
-    os.system(tar_cmd)
+    tar_cmd = ['tar', '-xvf', 'hisat_indices_tar_file']
+    subprocess.run(tar_cmd)
     return
 
 # run the script from service-script/app_taxonomic_classification perl script
+# It takes a single argument which is the pathname of a config.json file
+# This contains the app parameters in the params slot.
 def main(argv):
-    inputfile = argv
-    raw_params = inputfile[0]
-    input_dict = format_inputs(raw_params)
-    check_input_fastqs()
-    set_up_sample_dictionary(input_dict)
-    load_hisat_indicies(input_dict)
-    run_snakefile(input_dict)
+    params_file = argv[0]
+    try:
+        fh = open(params_file)
+        config = json.load(fh)
+        fh.close()
+    except IOError:
+        print(f"Could not read params file {params_file}")
+        sys.exit(1)
+    except json.JasonDecodeError as e:
+        print(f"JSON parse error in pyfile {params_file}: {e}")
+        sys.exit(1)
+
+    input_dict = config['params']
+    input_dir = config['input_data_dir']
+    output_dir = config['output_data_dir']
+    check_input_fastqs(config['input_data_dir'])
+    set_up_sample_dictionary(input_dir, input_dict, output_dir)
+    try:
+        load_hisat_indicies(input_dict)
+    except:
+        pass
+    run_snakefile(input_dict, config)
 
 
 if __name__ == "__main__":
