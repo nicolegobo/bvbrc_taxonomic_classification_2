@@ -5,7 +5,8 @@ se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
 msg = 'snakefile command recieved - PATHOGEN ANALYSIS \n'
 sys.stderr.write(msg)
-configfile: "../workflow/snakefile/config.json"
+configfile: "config.json"
+workflow_dir = config["workflow_dir"]
 
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
@@ -41,10 +42,10 @@ rule generate_sample_krona_plots:
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        python {config[kreport2krona]} \
+        python kreport2krona.py \
             --report-file {input.k2report} --output {output.k_text}
 
-        {config[krona_ktImportText]} \
+        ktImportText \
             {output.k_text} \
             -o {output.krona_html}
         '''
@@ -56,7 +57,7 @@ rule generate_multisample_krona_plots:
         set_krona_plot = 'output/multisample_krona.html'
     shell:
         '''
-        {config[krona_ktImportText]} \
+        ktImportText \
             {input.k_text} \
             -o {output.set_krona_plot}
         '''
@@ -64,11 +65,13 @@ rule generate_multisample_krona_plots:
 rule generate_sankey_plots:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt',
+    params:
+        sankey_script = os.path.join(workflow_dir, "scripts/sankey_plot_gen.R")
     output:
         sankey_plot = 'output/{sample}/{sample}_sankey.html'
     shell: 
         r'''
-        ../workflow/scripts/sankey_plot_gen.R --input {input.k2report} --output {output.sankey_plot}
+        {params.sankey_script} --input {input.k2report} --output {output.sankey_plot}
         '''
 
 rule clean_up_single_sample_html_files:
@@ -90,12 +93,13 @@ rule multisample_comp_table:
     input:
         k_text = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
     params:
+        multisample_comparsion_script = os.path.join(workflow_dir, "scripts/pavian_multisample_comparsion.R"),
         output_dir = 'output/'
     output:
         multi_comp = 'output/multisample_comparison.html',
     shell:
         r'''
-        ../workflow/scripts/pavian_multisample_comparsion.R --input "{input.k_text}" --output_dir {params.output_dir}
+        {params.multisample_comparsion_script} --input "{input.k_text}" --output_dir {params.output_dir}
         '''
 
 rule clean_up_multisample_html_files:
@@ -110,7 +114,7 @@ rule clean_up_multisample_html_files:
 
 rule multiqc:
     input:
-        multiqc_config = '../workflow/multiqc_config.yaml'
+        multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
     params:
         landing_dir = 'output',
         multiqc_dir = 'output/multiqc_data/',
@@ -120,9 +124,9 @@ rule multiqc:
         cl_multiqc_dir = directory('clean_up/multiqc_data')
     shell:
         '''
-        {config[multiqc]} --version
+        multiqc --version
 
-        {config[multiqc]} . \
+        multiqc . \
             -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."

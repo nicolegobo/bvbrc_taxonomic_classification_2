@@ -25,13 +25,11 @@ def check_input_fastqs(input_dir):
             if os.path.exists(zipped_path) == True:
                 msg = "ignoring {} duplicte file \n.".format(input_path)
                 sys.stderr.write(msg)
-                print(msg)
                 pass
             else:
                 msg = '{} identified as unzipped, zipping for analysis \n'.format(input_path)
                 sys.stderr.write(msg)
                 cmd = ["gzip", input_path]
-                # os.system(gzip_command)
                 subprocess.run(cmd)
                 # append to the list
                 zipped_fastqs.append(zipped_path)
@@ -189,7 +187,6 @@ def main(argv):
         sys.exit(1)
 
     input_dict = config['params']
-    print(input_dict["analysis_type"])
     input_dir = config['input_data_dir']
     output_dir = config['output_data_dir']
     check_input_fastqs(config['input_data_dir'])
