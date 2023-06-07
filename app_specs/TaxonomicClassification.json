@@ -38,40 +38,6 @@
     ]
   },
   {
-    "id": "input_type",
-    "desc": "Input type (reads / contigs)",
-    "required": 1,
-    "default": "reads",
-    "label": "Input Type",
-    "type": "enum",
-    "enum":
-      "reads",
-  },
-  // {
-  //   "id": "paired_sample_id",
-  //   "required": 1,
-  //   "label": "id for the sample",
-  //   "desc": "Sample ID that will be used for filenames",
-  //   "default": "sample",
-  //   "type": "string"
-  // },
-  // {
-  //   "id": "single_sample_id",
-  //   "required": 1,
-  //   "label": "id for the sample",
-  //   "desc": "Sample ID that will be used for filenames",
-  //   "default": "sample",
-  //   "type": "string"
-  // },
-  // {
-  //   "id": "srr_sample_id",
-  //   "required": 1,
-  //   "label": "id for the sample",
-  //   "desc": "Sample ID that will be used for filenames",
-  //   "default": "sample",
-  //   "type": "string"
-  // },
-  {
     "id": "paired_end_libs",
     "type": "group",
     "allow_multiple": true,
@@ -152,17 +118,6 @@
             "type": "string"
         },
     ]
-  },
-  {
-    "id": "algorithm",
-    "type": "enum",
-    "label": "Algorithm",
-    "default": "Kraken2",
-    "enum": [
-      "Kraken2"
-    ],
-    "desc": "Classification algorithm",
-    "required": 1
   },
   {
     "id": "database",
