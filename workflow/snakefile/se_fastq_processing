@@ -3,7 +3,7 @@ import sys
 samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING'
 sys.stderr.write(msg)
-configfile: "../workflow/snakefile/config.json"
+configfile: "config.json"
 ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 
 rule all:
@@ -26,9 +26,9 @@ rule fastqc_raw_reads:
         '''
         mkdir -p {params.fastqc_dir}
 
-        {config[fastqc]} --version
+        fastqc --version
         
-        {config[fastqc]} {input.raw_read} \
+        fastqc {input.raw_read} \
         -o {params.fastqc_dir} -q
 
         mv {params.fastqc_dir}/{wildcards.sample}_fastqc.html {output.fastqc_html}
@@ -49,11 +49,11 @@ rule hisat2_remove_host_dna:
         '''
         mkdir -p {params.hisat2_dir}
 
-        {config[hisat2]} --version
+        hisat2 --version
 
         echo "starting hisat2......"
 
-        {config[hisat2]} -x GCF_000001405.39_GRCh38.p13_genomic \
+        hisat2 -x GCF_000001405.39_GRCh38.p13_genomic \
             -U {input.raw_read} \
             --un-gz \
             {params.tmp_name} -S {output.sam} \
@@ -74,9 +74,9 @@ rule fastqc_on_host_removed_reads:
         '''
         mkdir -p {params.fastqc_dir}
 
-        {config[fastqc]} --version
+        fastqc --version
         
-        {config[fastqc]} {input.clean_read} \
+        fastqc {input.clean_read} \
         -o {params.fastqc_dir} -q
         '''
 
@@ -92,11 +92,12 @@ rule classify_with_kraken:
         '''
         mkdir -p {params.kraken_dir}
 
-        {config[kraken2]} --db /vol/patric3/metagenome_dbs/kraken2 \
+        kraken2 --db /vol/patric3/metagenome_dbs/kraken2 \
             --threads 12 \
             --minimum-hit-groups 3 \
             --report-minimizer-data \
             --memory-mapping \
+            --confidence 0.1 \
             {input.clean_se} \
             --report {output.k2report} \
             --output {output.k2_output}
