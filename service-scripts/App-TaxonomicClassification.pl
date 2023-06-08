@@ -33,15 +33,9 @@ sub run_classification
     {
 	die "Invalid database name '$params->{database}' specified. Valid values are " . join(", ", map { qq("$_") } keys %db_map);
     }
-    
-    if ($params->{input_type} eq 'reads')
-    {
+
 	process_read_input($app, $params);
-    }
-    else
-    {
-	die "Invalid input type '$params->{input_type}'";
-    }
+
 
 }
 
@@ -67,7 +61,7 @@ sub process_read_input
 
     my $json_string = encode_json($params);
     # pushing the wrapper command
-    print('Starting the python wrapper....');
+    print STDERR "Starting the python wrapper....\n";
 
     #
     # Create json config file for the execution of this workflow.

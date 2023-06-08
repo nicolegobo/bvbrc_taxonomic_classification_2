@@ -5,7 +5,7 @@ library(DT)
 library(pavian)
 library(htmltools)
 
-parser <- ArgumentParser(description= 'This script creates an multi sample comparison table HTML from a Kracken2 report')
+parser <- ArgumentParser(description= "This script creates an multi sample comparison table HTML from a Kracken2 report")
 
 parser$add_argument('--input', '-i', help= 'Path one or multiple Kraken2 Report')
 parser$add_argument('--output_dir', '-o', help= 'Path where you would like all output files (multisample_comarison.HTML, summary.HTML, summary.CSV)')
@@ -78,6 +78,8 @@ normalized_taxon_reads <- normalize(taxon_reads[sel_rows,], sums = colSums(filte
 head(cbind(tax_data1[,1:3],max=apply(cbind(normalized_clade_reads),1,max, na.rm=T), normalized_clade_reads)[order(-apply(cbind(normalized_clade_reads),1,max, na.rm=T)),])
 
 reads_zscore <- robust_zscore(100*cbind(normalized_clade_reads,normalized_taxon_reads), 0.001)
+reads_zscore <- signif(reads_zscore, digits = 3)
+
 clade_reads_zscore <- reads_zscore[,1:length(sample_name_list)]
 # ^^ could add other functions here 
 reads_zscore_df <- cbind(tax_data1[,1:3],max=apply(clade_reads_zscore,1,max, na.rm=T), clade_reads_zscore)[order(-apply(clade_reads_zscore,1,max, na.rm=T)),]
@@ -88,17 +90,36 @@ std_cols <- reads_zscore_df[,c("name", "taxRank", "taxID", "max")]
 # subsection sample columns
 sample_cols <- reads_zscore_df[, -c(1:4)]
 
-#Set up breaks and colors
+#Set up breaks and colors 
 brks <- quantile(sample_cols, probs = seq(.05, .95, .05), na.rm = TRUE, names = FALSE)
-clrs <- round(seq(180, 60, length.out = length(brks) + 1), 0) %>%
+clrs <- round(seq(150, 225, length.out = length(brks) + 1), 0) %>%
+#clrs <- round(seq(60, 180, length.out = length(brks) + 1), 0) %>%
   {paste0("rgb(255",",", .,",", .,")")}
 
-### apply table coloring/style to the data 
+
+## apply table coloring/style to the data 
 multi_sample_table <- DT::datatable(reads_zscore_df,
                 filter = "bottom", selection = "single", escape = FALSE,
-                caption = "This table shows the taxa at the species level. The color is weighted according to z-score.",
+                caption = "This is a tabular view of the identification results from multiple samples.
+  The goal is to identify which microbes unique within each sample or common amongst all samples. The values in the
+  table are the robust z-score calculated from the from the kraken2 report. The robust z-score is the median absolute
+  deviation. This method is chosen to reduce impact from outliers in the data, providing a more reliable measure of
+  relative position within the data distribution. 
+  
+   When intpreting the robust z-score consider that a positive robust
+  z-score indicates that t the number of fragments assigned to that taxa was above the median or central tendancy of the
+  data. Conversly, a negitive robust z-score indicates that the number of fragments assigned to that taxa was below the
+  median or central tendancy of the data. The magnitude (represented as the value of the z-score) indicates the distance of
+  the data point from the central tendency in terms of the robust measure of dispersion.
+
+   The intensity of the red for each cell is calculated by putting the read scores into quantiles probabilites ranging from
+  0.05 to 0.95 with an increment of 0.05. This means that the intensity of the color represents the relative position in the
+   datasets disribution for that datapoint. 
+    When considering the intensity of the color a darker color indicates that value
+   is more likely to be an outlier.",
                 options = list(
-                  autoWidth = TRUE, columnDefs = list(list(width = '100px',targets = 1:5)))) %>%
+                  stripeClasses = "", autoWidth = TRUE, 
+                  columnDefs = list(list(width = '100px',targets = 1:5)))) %>%
                 formatStyle(names(sample_cols),background = styleInterval(brks,clrs))
 
 ### make output files ###
