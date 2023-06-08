@@ -8,7 +8,7 @@ use Bio::KBase::AppService::AppScript;
 use Bio::KBase::AppService::ReadSet;
 use File::Slurp;
 use IPC::Run;
-use Cwd;
+use Cwd qw(abs_path getcwd);
 use File::Path 'make_path';
 use strict;
 use Data::Dumper;
@@ -59,6 +59,36 @@ sub process_read_input
     $readset->localize_libraries($staging);
     $readset->stage_in($app->workspace);
 
+    #
+    # Modify the parameters to remove any SRA libraries and instead
+    # use the SE & PE lists from the readset.
+    #
+
+    my $nparams;
+
+    print Dumper(BEFORE => $readset, $params);
+    $readset->visit_libraries(sub { my($pe) = @_;
+				    my $lib = {
+					read1 => abs_path($pe->{read_path_1}),
+					read2 => abs_path($pe->{read_path_2}),
+					(exists($pe->{sample_id}) ? (sample_id => $pe->{sample_id}) : ())
+					};
+				    push(@{$nparams->{paired_end_libs}}, $lib);
+				},
+			      sub {
+				  my($se) = @_;
+				  my $lib = {
+				      read => abs_path($se->{read_path}),
+				      (exists($se->{sample_id}) ? (sample_id => $se->{sample_id}) : ())
+				      };
+				  push(@{$nparams->{single_end_libs}}, $lib);
+			      },
+			     );
+    $params->{srr_libs} = [];
+    $params->{paired_end_libs} = $nparams->{paired_end_libs};
+    $params->{single_end_libs} = $nparams->{single_end_libs};
+
+    print Dumper(AFTER => $params);
     my $json_string = encode_json($params);
     # pushing the wrapper command
     print STDERR "Starting the python wrapper....\n";
