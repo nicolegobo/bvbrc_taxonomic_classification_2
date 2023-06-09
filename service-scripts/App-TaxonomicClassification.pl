@@ -102,7 +102,7 @@ sub process_read_input
     #
 
     my %config_vars;
-    my $wf_dir = "$ENV{KB_TOP}/workflows";
+    my $wf_dir = "$ENV{KB_TOP}/workflows/$ENV{KB_MODULE_DIR}";
     if (! -d $wf_dir)
     {
 	$wf_dir = "$ENV{KB_TOP}/modules/$ENV{KB_MODULE_DIR}/workflow";
