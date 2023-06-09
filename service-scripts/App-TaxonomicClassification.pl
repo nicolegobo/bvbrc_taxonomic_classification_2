@@ -117,6 +117,7 @@ sub process_read_input
     $config_vars{output_data_dir} = $output;
     $config_vars{snakemake} = $snakemake;
     $config_vars{params} = $params;
+    $config_vars{cores} = $ENV{P3_ALLOCATED_CPU} // 2;
     write_file("$top/config.json", JSON::XS->new->pretty->canonical->encode(\%config_vars));
 
     my @cmd = ("python3", "$wf_dir/snakefile/wrapper.py", "$top/config.json");
