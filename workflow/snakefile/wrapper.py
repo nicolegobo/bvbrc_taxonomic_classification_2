@@ -122,8 +122,6 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir):
         os.makedirs(pe_path, exist_ok = True)
 
         for i in range(len(ws_paired_reads)):
-            # print('this is the file path')
-            # print(ws_paired_reads[i]['read1'])
             read1_filename = ws_paired_reads[i]['read1'].split('/')[-1]
             read1_filepath = check_input_fastqs(input_dir, read1_filename)
             shutil.copy(read1_filepath, '/home/nbowers/bvbrc-dev/dev_container/modules/bvbrc_taxonomic_classification_2/service-scripts/test')
@@ -189,7 +187,6 @@ def main(argv):
         sys.exit(1)
 
     input_dict = config['params']
-    print(input_dict)
     input_dir = config['input_data_dir']
     output_dir = config['output_data_dir']
     set_up_sample_dictionary(input_dir, input_dict, output_dir)
