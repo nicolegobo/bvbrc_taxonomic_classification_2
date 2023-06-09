@@ -7,37 +7,30 @@ import sys
 import shutil
 import subprocess
 
-def check_input_fastqs(input_dir):
-    input_paths =[]
-    #### code block for checking the input fastqs ####
-    ### relative path running from service-script ###
-    input_paths = list(glob.glob(f"{input_dir}/*fastq*"))
-
-    zipped_fastqs = []
-    # iterate over every file 
-    for input_path in input_paths:
-        # find the extension
-        if input_path.endswith('fastq.gz'):
-            zipped_fastqs.append(input_path)
-        elif input_path.endswith('.fastq'):
-            zipped_path = input_path + '.gz'
-            # check if the zipped file already exists in the list of input files 
-            if os.path.exists(zipped_path) == True:
-                msg = "ignoring {} duplicte file \n.".format(input_path)
-                sys.stderr.write(msg)
-                pass
-            else:
-                msg = '{} identified as unzipped, zipping for analysis \n'.format(input_path)
-                sys.stderr.write(msg)
-                cmd = ["gzip", input_path]
-                subprocess.run(cmd)
-                # append to the list
-                zipped_fastqs.append(zipped_path)
-        else:
-            msg = "Error {} not end in 'fastq' or 'fastq.gz'. \n {} ignored".format(input_path, input_path)
+def check_input_fastqs(input_dir, filename):
+    input_path = f"{input_dir}/{filename}"
+    if input_path.endswith('fastq.gz'):
+        return input_path
+    
+    elif input_path.endswith('.fastq'):
+        zipped_path = input_path + '.gz'
+        # check if the zipped file already exists in the list of input files 
+        if os.path.exists(zipped_path) == True:
+            msg = "zipped file exists using {}.gz instead \n".format(input_path)
             sys.stderr.write(msg)
-            pass
-    return
+            return zipped_path
+
+        else:
+            msg = '{} identified as unzipped, zipping for analysis \n'.format(input_path)
+            sys.stderr.write(msg)
+            cmd = ["gzip", input_path]
+            subprocess.run(cmd)
+            return zipped_path
+
+    else:
+        msg = "Error {} not end in 'fastq' or 'fastq.gz'. \n {} ignored".format(input_path, input_path)
+        sys.stderr.write(msg)
+        pass
 
 def format_inputs(raw_params):
     input_dict = json.loads(raw_params)
@@ -120,8 +113,8 @@ def run_snakefile(input_dict, config):
 def set_up_sample_dictionary(input_dir, input_dict, output_dir):
     # set up the sample dictionary
     #### paired reads ####
-    paired_sample_dict = {}
     if len(input_dict['paired_end_libs']) != 0:
+        paired_sample_dict = {}
         ws_paired_reads = []
         ws_paired_reads = input_dict['paired_end_libs']
         ### relative path running from service-script ###
@@ -130,20 +123,25 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir):
 
         for i in range(len(ws_paired_reads)):
             read1_filename = ws_paired_reads[i]['read1'].split('/')[-1]
+            read1_filepath = check_input_fastqs(input_dir, read1_filename)
+            shutil.copy(read1_filepath, '/home/nbowers/bvbrc-dev/dev_container/modules/bvbrc_taxonomic_classification_2/service-scripts/test')
+
             read2_filename = ws_paired_reads[i]['read2'].split('/')[-1]
-            sample_id = ws_paired_reads[i]['sample_id']
+            read2_filepath = check_input_fastqs(input_dir, read2_filename)
+            sample_id = ws_paired_reads[i]['sample_id'].split('/')[-1]
             pe_r1_samplename = f"{sample_id}_R1.fastq.gz"
             pe_r2_samplename = f"{sample_id}_R2.fastq.gz"
 
             paired_sample_dict[read1_filename] = pe_r1_samplename
             paired_sample_dict[read2_filename] = pe_r2_samplename
-            ### commands for running from service-script ###
-            shutil.copy(f"{input_dir}/{read1_filename}", f"{input_dir}/pe_reads/{pe_r1_samplename}")
-            shutil.copy(f"{input_dir}/{read2_filename}", f"{input_dir}/pe_reads/{pe_r2_samplename}")
+
+            shutil.copy(read1_filepath, f"{input_dir}/pe_reads/{pe_r1_samplename}")
+            shutil.copy(read2_filepath, f"{input_dir}/pe_reads/{pe_r2_samplename}")
 
     
-    # #### single reads ####
+    #### single reads ####
     if len(input_dict['single_end_libs']) != 0:
+        single_end_sample_dict = {}
         ws_single_end_reads = []
         ws_single_end_reads = input_dict['single_end_libs']
         ### relative path running from service-script ###
@@ -152,10 +150,12 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir):
 
         for i in range(len(ws_single_end_reads)):
             se_filename = ws_single_end_reads[i]['read'].split('/')[-1]
-            sample_id = ws_single_end_read[i]['sample_id']
-            se_samplename = f"single_sample_{sample_id}.fastq.gz"
+            se_filepath = check_input_fastqs(input_dir, se_filename)
+            sample_id = ws_single_end_reads[i]['sample_id']
+            se_samplename = f"{sample_id}.fastq.gz"
             single_end_sample_dict[se_filename] = se_samplename
-            shutil.copy(f"{input_dir}/{se_filename}", f"{input_dir}/se_reads/{se_samplename}")
+
+            shutil.copy(se_filepath, f"{input_dir}/se_reads/{se_samplename}")
 
     # export the sample dictionary to .CSV
     with open(f"{output_dir}/sample_key.csv", 'w', newline='') as file:
@@ -189,7 +189,6 @@ def main(argv):
     input_dict = config['params']
     input_dir = config['input_data_dir']
     output_dir = config['output_data_dir']
-    check_input_fastqs(config['input_data_dir'])
     set_up_sample_dictionary(input_dir, input_dict, output_dir)
     
     try:

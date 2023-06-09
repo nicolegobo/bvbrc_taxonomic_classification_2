@@ -66,7 +66,6 @@ sub process_read_input
 
     my $nparams = { single_end_libs => [], paired_end_libs => [], srr_libs => [] };;
 
-    print Dumper(BEFORE => $readset, $params);
     $readset->visit_libraries(sub { my($pe) = @_;
 				    my $lib = {
 					read1 => abs_path($pe->{read_path_1}),
@@ -86,7 +85,6 @@ sub process_read_input
 			     );
     $params->{$_} = $nparams->{$_} foreach keys %$nparams;
 
-    print Dumper(AFTER => $params);
     my $json_string = encode_json($params);
     # pushing the wrapper command
     print STDERR "Starting the python wrapper....\n";
