@@ -45,7 +45,7 @@
     "default": null,
     "group": [
       {
-        "id": "paired_sample_id",
+        "id": "sample_id",
         "required": 1,
         "label": "id for the sample",
         "desc": "Sample Id that will be used for filenames",

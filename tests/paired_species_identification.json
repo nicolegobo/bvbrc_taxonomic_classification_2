@@ -3,11 +3,12 @@
     "database": "standard",
     "host_genome": "homo_sapiens",
     "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification",
-    "output_file": "paired_1_sample_species_identification_k2_db",
+    "output_file": "one_sample_species_identification_k2_db",
     "paired_end_libs": [
         {
-            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486981_1.fastq.gz",
-            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486981_2.fastq.gz"
+        "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486981_1.fastq.gz",
+        "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/SRR12486981_2.fastq.gz",
+        "sample_id": "pe_sample_id"
         }
     ]
 }
