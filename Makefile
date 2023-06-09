@@ -35,7 +35,7 @@ deploy: deploy-all
 deploy-all: deploy-client 
 deploy-client: deploy-libs deploy-scripts deploy-docs
 
-deploy-service: deploy-libs deploy-scripts deploy-service-scripts deploy-specs
+deploy-service: deploy-libs deploy-scripts deploy-service-scripts deploy-specs deploy-workflow
 
 deploy-dir:
 	if [ ! -d $(SERVICE_DIR) ] ; then mkdir $(SERVICE_DIR) ; fi
@@ -43,6 +43,10 @@ deploy-dir:
 
 deploy-docs: 
 
+deploy-workflow:
+	mkdir -p $(TARGET)/workflows
+	rm -rf $(TARGET)/workflows/$(CURRENT_DIR)
+	rsync -arv workflow/. $(TARGET)/workflows/$(CURRENT_DIR)
 
 clean:
 
