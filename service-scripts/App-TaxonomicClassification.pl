@@ -64,7 +64,7 @@ sub process_read_input
     # use the SE & PE lists from the readset.
     #
 
-    my $nparams;
+    my $nparams = { single_end_libs => [], paired_end_libs => [], srr_libs => [] };;
 
     print Dumper(BEFORE => $readset, $params);
     $readset->visit_libraries(sub { my($pe) = @_;
@@ -84,9 +84,7 @@ sub process_read_input
 				  push(@{$nparams->{single_end_libs}}, $lib);
 			      },
 			     );
-    $params->{srr_libs} = [];
-    $params->{paired_end_libs} = $nparams->{paired_end_libs};
-    $params->{single_end_libs} = $nparams->{single_end_libs};
+    $params->{$_} = $nparams->{$_} foreach keys %$nparams;
 
     print Dumper(AFTER => $params);
     my $json_string = encode_json($params);
