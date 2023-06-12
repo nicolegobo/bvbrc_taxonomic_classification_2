@@ -8,6 +8,7 @@ msg = 'snakefile command recieved - MICROBOIME ANALYSIS. \n'
 sys.stderr.write(msg)
 configfile: "config.json"
 workflow_dir = config["workflow_dir"]
+database_path = config["params"]["database"]
 
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
@@ -41,6 +42,7 @@ rule bracken_abundance_estimation:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     params:
+        kmer_distr = os.path.join(database_path, "database100mers.kmer_distrib"),
         bracken_dir = 'output/{sample}/bracken_output',
         ave_read_length = '100',
         level_of_abundance_estimation = 's',
@@ -54,7 +56,7 @@ rule bracken_abundance_estimation:
 
         est_abundance.py
             -i {input.k2report} \
-            -k /vol/patric3/metagenome_dbs/kraken2/database100mers.kmer_distrib \
+            -k {params.kmer_distr} \
             -o {output.bracken_output} \
             -l S \
             --out-report {output.bracken_report} \
