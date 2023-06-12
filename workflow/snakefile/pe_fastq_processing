@@ -5,7 +5,7 @@ read_nums = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").rea
 msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING \n'
 sys.stderr.write(msg)
 configfile: "config.json"
-ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads #> classify_with_kraken
+ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 database = "/vol/patric3/metagenome_dbs/kraken2"
 
 rule all:
