@@ -1,4 +1,3 @@
-import os
 import sys
 #### running from service-script ####
 samples = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").sample
