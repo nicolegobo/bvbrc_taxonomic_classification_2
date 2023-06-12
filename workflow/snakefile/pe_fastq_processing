@@ -23,6 +23,7 @@ rule fastqc_raw_reads:
     output:
         fastqc_html = 'output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.html',
         fastqc_zip = 'output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.zip'
+    threads: 4
     shell:
         '''
         mkdir -p {params.fastqc_dir}
@@ -30,6 +31,7 @@ rule fastqc_raw_reads:
         fastqc --version
         
         fastqc {input.raw_read} \
+        -t {threads} \
         -o {params.fastqc_dir} -q
 
         echo {params.fastqc_dir}/{wildcards.sample}_{wildcards.read_num}_fastqc.html
@@ -53,6 +55,7 @@ rule hisat2_remove_host_dna:
         sam = 'output/{sample}/hisat2_results/{sample}_aligned_reads.sam',
         out_r1 = 'output/{sample}/hisat2_results/{sample}_host_removed_R1.fastq.gz',
         out_r2 = 'output/{sample}/hisat2_results/{sample}_host_removed_R2.fastq.gz'
+    threads: 16
     shell:
         '''
         mkdir -p {params.hisat2_dir}
@@ -66,7 +69,7 @@ rule hisat2_remove_host_dna:
             -2 {input.r2} \
             --un-conc-gz \
             {params.tmp_name} -S {output.sam} \
-            --threads 12
+            --threads {threads}
 
         mv {params.fq_r1} {output.out_r1}
         mv {params.fq_r2} {output.out_r2}
@@ -80,6 +83,7 @@ rule fastqc_on_host_removed_reads:
     output:
         fastqc_html = 'output/{sample}/fastqc_results/host_removed_reads/{sample}_host_removed_R{read_num}_fastqc.html',
         fastqc_zip = 'output/{sample}/fastqc_results/host_removed_reads/{sample}_host_removed_R{read_num}_fastqc.zip'
+    threads: 4
     shell:
         '''
         mkdir -p {params.fastqc_dir}
@@ -87,6 +91,7 @@ rule fastqc_on_host_removed_reads:
         fastqc --version
         
         fastqc {input.clean_read} \
+        -t {threads} \
         -o {params.fastqc_dir} -q
         '''
 
@@ -100,12 +105,13 @@ rule classify_with_kraken:
     output:
         k2_output = 'output/{sample}/kraken_output/{sample}_k2_output.txt',
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+    threads: 16
     shell:
         '''
         mkdir -p {params.kraken_dir}
 
         kraken2 --db {params.database} \
-            --threads 12 \
+            --threads {threads} \
             --minimum-hit-groups 3 \
             --report-minimizer-data \
             --memory-mapping \

@@ -66,46 +66,37 @@ def run_snakefile(input_dict, config):
     SNAKEMAKE_PATH = config['snakemake']
     ### relative path running from service-script ###
     SNAKEFILE_DIR = f"{config['workflow_dir']}/snakefile/"
-    if os.path.exists(f"{input_dir}/pe_reads"):
-        SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'pe_fastq_processing')
-        cmd = [SNAKEMAKE_PATH,
-        "--snakefile",  SNAKEFILE,
+
+    common_params = [
+        SNAKEMAKE_PATH,
+        "--cores", str(config['cores']),
         "--use-singularity",
         "--verbose",
-        "--printshellcmds",
-        "--debug"]
+        "--printshellcmds"]
+
+    if config['cores'] == 1:
+        common_params.append("--debug")
+        
+    if os.path.exists(f"{input_dir}/pe_reads"):
+        SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'pe_fastq_processing')
+        cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
 
     # if there are single end reads process them
     if os.path.exists('staging/se_reads'):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'se_fastq_processing')
-        cmd = [SNAKEMAKE_PATH,
-        "--snakefile",  SNAKEFILE,
-        "--use-singularity",
-        "--verbose",
-        "--printshellcmds",
-        "--debug"]
+        cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
 
     # paired and single end reads will be processed together
     if input_dict["analysis_type"] == "pathogen":
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'pathogen_analysis')
-        cmd = [SNAKEMAKE_PATH,
-        "--snakefile",  SNAKEFILE,
-        "--use-singularity",
-        "--verbose",
-        "--printshellcmds",
-        "--debug"]
+        cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
 
     if input_dict["analysis_type"] == 'microbiome':
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'microbiome_analysis')
-        cmd = [SNAKEMAKE_PATH,
-        "--snakefile",  SNAKEFILE,
-        "--use-singularity",
-        "--verbose",
-        "--printshellcmds",
-        "--debug"]
+        cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
     return
 
@@ -124,7 +115,7 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir):
         for i in range(len(ws_paired_reads)):
             read1_filename = ws_paired_reads[i]['read1'].split('/')[-1]
             read1_filepath = check_input_fastqs(input_dir, read1_filename)
-            shutil.copy(read1_filepath, '/home/nbowers/bvbrc-dev/dev_container/modules/bvbrc_taxonomic_classification_2/service-scripts/test')
+            # shutil.copy(read1_filepath, '/home/nbowers/bvbrc-dev/dev_container/modules/bvbrc_taxonomic_classification_2/service-scripts/test')
 
             read2_filename = ws_paired_reads[i]['read2'].split('/')[-1]
             read2_filepath = check_input_fastqs(input_dir, read2_filename)
