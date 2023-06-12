@@ -1,3 +1,4 @@
+import os
 import sys
 #### relative path from service-script ####
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_R{read_num}.fastq.gz').sample
@@ -42,7 +43,7 @@ rule generate_sample_krona_plots:
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        python kreport2krona.py \
+        kreport2krona.py \
             --report-file {input.k2report} --output {output.k_text}
 
         ktImportText \

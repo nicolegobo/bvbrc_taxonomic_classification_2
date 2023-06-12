@@ -71,19 +71,19 @@ rule calculate_alpha_diversity:
         alpha_diversity_csv = 'output/{sample}/bracken_output/{sample}_alpha_diversity.csv'
     shell:
         '''
-        python alpha_diversity.py \
+        alpha_diversity.py \
             -f {input.bracken_output} -a BP >> {output.alpha_diversity_csv}
 
-        python alpha_diversity.py  \
+        alpha_diversity.py  \
             -f {input.bracken_output} -a Sh >> {output.alpha_diversity_csv}
 
-        python alpha_diversity.py  \
+        alpha_diversity.py  \
             -f {input.bracken_output} -a F >> {output.alpha_diversity_csv}
 
-        python alpha_diversity.py \
+        alpha_diversity.py \
             -f {input.bracken_output} -a Si >> {output.alpha_diversity_csv}
 
-        python alpha_diversity.py  \
+        alpha_diversity.py  \
             -f {input.bracken_output} -a ISi >> {output.alpha_diversity_csv}
 
         {params.alpha_stats_cleanup_script} {input.bracken_output} {params.temp_alpha_diversity_csv}
@@ -114,7 +114,7 @@ rule generate_sample_krona_plots:
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        python kreport2krona.py \
+        kreport2krona.py \
             --report-file {input.bracken_report} --output {output.b_txt}
 
         ktImportText \
