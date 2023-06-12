@@ -6,6 +6,7 @@
 
 use Bio::KBase::AppService::AppScript;
 use Bio::KBase::AppService::ReadSet;
+use Bio::KBase::AppService::AppConfig qw(metagenome_dbs);
 use File::Slurp;
 use IPC::Run;
 use Cwd qw(abs_path getcwd);
@@ -118,6 +119,13 @@ sub process_read_input
     $config_vars{snakemake} = $snakemake;
     $config_vars{params} = $params;
     $config_vars{cores} = $ENV{P3_ALLOCATED_CPU} // 2;
+
+    #
+    # Database selection
+    #
+
+    $params->{database} = metagenome_dbs . "/kraken2";
+
     write_file("$top/config.json", JSON::XS->new->pretty->canonical->encode(\%config_vars));
 
     my @cmd = ("python3", "$wf_dir/snakefile/wrapper.py", "$top/config.json");
