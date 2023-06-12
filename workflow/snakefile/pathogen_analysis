@@ -42,7 +42,7 @@ rule generate_sample_krona_plots:
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        python kreport2krona.py \
+        kreport2krona.py \
             --report-file {input.k2report} --output {output.k_text}
 
         ktImportText \

@@ -5,6 +5,7 @@ msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING'
 sys.stderr.write(msg)
 configfile: "config.json"
 ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
+database = "/vol/patric3/metagenome_dbs/kraken2"
 
 rule all:
     input:
@@ -89,6 +90,7 @@ rule classify_with_kraken:
     input:
         clean_se = 'output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz'
     params:
+        database = database_path,
         kraken_dir = 'output/{sample}/kraken_output'
     output:
         k2_output = 'output/{sample}/kraken_output/{sample}_k2_output.txt',
@@ -98,7 +100,7 @@ rule classify_with_kraken:
         '''
         mkdir -p {params.kraken_dir}
 
-        kraken2 --db /vol/patric3/metagenome_dbs/kraken2 \
+        kraken2 --db {params.database} \
             --threads {threads} \
             --minimum-hit-groups 3 \
             --report-minimizer-data \
