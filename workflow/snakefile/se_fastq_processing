@@ -5,6 +5,7 @@ msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING'
 sys.stderr.write(msg)
 configfile: "config.json"
 ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
+database = "/vol/patric3/metagenome_dbs/kraken2"
 
 rule all:
     input:

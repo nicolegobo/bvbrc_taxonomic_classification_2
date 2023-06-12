@@ -1,3 +1,4 @@
+import os
 import sys
 #### running from service-script ####
 samples = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").sample
@@ -5,7 +6,8 @@ read_nums = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").rea
 msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING \n'
 sys.stderr.write(msg)
 configfile: "config.json"
-ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
+ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads #> classify_with_kraken
+database = "/vol/patric3/metagenome_dbs/kraken2"
 
 rule all:
     input:
@@ -94,6 +96,7 @@ rule classify_with_kraken:
         clean_r1 = 'output/{sample}/hisat2_results/{sample}_host_removed_R1.fastq.gz',
         clean_r2 = 'output/{sample}/hisat2_results/{sample}_host_removed_R2.fastq.gz'
     params:
+        database = database_path,
         kraken_dir = 'output/{sample}/kraken_output'
     output:
         k2_output = 'output/{sample}/kraken_output/{sample}_k2_output.txt',
@@ -102,7 +105,7 @@ rule classify_with_kraken:
         '''
         mkdir -p {params.kraken_dir}
 
-        kraken2 --db /vol/patric3/metagenome_dbs/kraken2 \
+        kraken2 --db {params.database} \
             --threads 12 \
             --minimum-hit-groups 3 \
             --report-minimizer-data \
