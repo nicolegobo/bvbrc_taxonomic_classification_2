@@ -192,6 +192,7 @@ sub save_output_files
     {
 	while (my $p = readdir(D))
 	{
+	    next if ($p =~ /^\./);
 	    my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/$p", "ws:" . $app->result_folder);
 	    print STDERR "saving files to workspace... @cmd\n";
 	    my $ok = IPC::Run::run(\@cmd);
