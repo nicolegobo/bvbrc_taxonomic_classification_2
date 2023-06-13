@@ -11,12 +11,14 @@ workflow_dir = config["workflow_dir"]
 database_path = config["params"]["database"]
 
 rule_all_list = [
-        expand('output/{sample}/{sample}_krona.html', sample=samples),
-        expand('output/{sample}/{sample}_sankey.html', sample=samples),
-        'output/multiqc_report.html',
-        expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
         expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples),
         expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples),
+        expand('output/{sample}/{sample}_krona.html', sample=samples),
+        expand('output/{sample}/{sample}_sankey.html', sample=samples),
+        expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
+        'output/multiqc_report.html',
+        'output/multiqc_data/',
+        'clean_up/multiqc_data',
         ]
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
 ## multisample comparison and visualizations will either fail or be redundant if only one sample present
@@ -29,9 +31,9 @@ else:
     msg = "preforming analysis for multiple samples - INCLUDES multisample_comparison.html, multisample_krona.html"
     sys.stderr.write(msg)
     rule_all_list.append('output/multisample_comparison.html')
+    rule_all_list.append('clean_up/multisample_comparison_files')
     rule_all_list.append('output/multisample_krona.html')
     rule_all_list.append('output/beta_diversity.csv')
-    rule_all_list.append('clean_up/multisample_comparison_files')
 
 
 rule all:
@@ -42,7 +44,8 @@ rule bracken_abundance_estimation:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     params:
-        kmer_distr = os.path.join(database_path, "database100mers.kmer_distrib"),
+        #kmer_distr = os.path.join(database_path, "database100mers.kmer_distrib"),
+        kmer_distr = "/home/nbowers/bvbrc-dev/dev_container/modules/taxonomic_classification_cloned_from_original/bvbrc_taxonomic_classification_cloned_from_original/tests/required_data/k2protocol_db/database100mers.kmer_distrib",
         bracken_dir = 'output/{sample}/bracken_output',
         ave_read_length = '100',
         level_of_abundance_estimation = 's',
@@ -54,7 +57,7 @@ rule bracken_abundance_estimation:
         '''
         mkdir -p {params.bracken_dir}
 
-        est_abundance.py
+        est_abundance.py \
             -i {input.k2report} \
             -k {params.kmer_distr} \
             -o {output.bracken_output} \
@@ -88,7 +91,7 @@ rule calculate_alpha_diversity:
         alpha_diversity.py  \
             -f {input.bracken_output} -a ISi >> {output.alpha_diversity_csv}
 
-        {params.alpha_stats_cleanup_script} {input.bracken_output} {params.temp_alpha_diversity_csv}
+        python {params.alpha_stats_cleanup_script} {input.bracken_output} {params.temp_alpha_diversity_csv}
 
         mv {wildcards.sample}_alpha_diversity_tmp.csv {output.alpha_diversity_csv}
         '''
@@ -142,22 +145,23 @@ rule generate_sankey_plots:
     params:
         sankey_script = os.path.join(workflow_dir, "scripts/sankey_plot_gen.R")
     output:
-        sankey_plot = 'output/{sample}/{sample}_sankey.html'
+        sankey_plot = 'output/{sample}/{sample}_sankey.html',
+        sankey_dir = directory('output/{sample}/{sample}_sankey_files/'),
     shell: 
         r'''
         {params.sankey_script} --input {input.bracken_report} --output {output.sankey_plot}
         '''
 
 rule clean_up_sankey_html_files:
-    params:
-        sankey_dir = 'output/{sample}/{sample}_sankey_files/',
-        clean_up_dir = 'clean_up'
+    input:
+        sankey_plot = 'output/{sample}/{sample}_sankey.html',
+        sankey_dir = 'output/{sample}/{sample}_sankey_files',
     output:
         cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
     shell:
         '''
-        mkdir -p {params.clean_up_dir}
-        mv {params.sankey_dir} {output.cl_sankey_dir}
+        mkdir -p {output.cl_sankey_dir}
+        mv {input.sankey_dir} {output.cl_sankey_dir}
         '''
 
 rule multisample_comp_table:
@@ -167,7 +171,8 @@ rule multisample_comp_table:
         multisample_comparsion_script = os.path.join(workflow_dir, "scripts/pavian_multisample_comparsion.R"),
         output_dir = 'output/'
     output:
-        multi_comp = 'output/multisample_comparison.html'
+        multi_comp = 'output/multisample_comparison.html',
+        multisample_comp_dir = directory('output/multisample_comparison_files')
     shell:
         r'''
         {params.multisample_comparsion_script} --input "{input.kraken2_report}" --output_dir {params.output_dir}
@@ -181,18 +186,18 @@ rule clean_up_multisample_html_files:
         cl_multisample_comp_dir = directory('clean_up/multisample_comparison_files')
     shell:
         '''
+        mkdir -p {output.cl_multisample_comp_dir}
         mv {input.multisample_comp_dir} {output.cl_multisample_comp_dir}
         '''
 
 rule multiqc:
     input:
-        multiqc_config = '{config[workflow_dir]}/multiqc_config.yaml'
+        multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
     params:
         landing_dir = 'output',
-        multiqc_dir = 'output/multiqc_data/',
-        clean_up_dir = 'clean_up'
     output:
         'output/multiqc_report.html',
+        multiqc_dir = directory('output/multiqc_data/'),
         cl_multiqc_dir = directory('clean_up/multiqc_data')
     shell:
         '''
@@ -203,7 +208,7 @@ rule multiqc:
             -o {params.landing_dir} --fullnames \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
         
-        mkdir -p {params.clean_up_dir}
+        mkdir -p {output.cl_multiqc_dir}
 
-        mv {params.multiqc_dir} {params.clean_up_dir}
+        mv {output.multiqc_dir} {output.cl_multiqc_dir}
         '''
