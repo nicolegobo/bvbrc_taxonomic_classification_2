@@ -13,7 +13,6 @@ rule_all_list = [
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
         'output/multiqc_report.html',
         expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
-        # expand('clean_up/{sample}.b.krona.txt', sample=samples),
         'clean_up/multiqc_data',
         ]
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
@@ -90,15 +89,6 @@ rule clean_up_sankey_html_files:
         mkdir -p {params.clean_up_dir}
         mv {input.sankey_dir} {output.cl_sankey_dir}
         '''
-# rule clean_up_k_text:
-#     input:
-#         k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
-#     output:
-#         cl_k_text = 'clean_up/{sample}.b.krona.txt'
-#     shell:
-#         '''
-#         mv {input.k_text} {output.cl_k_text}
-#         '''
 
 rule multisample_comp_table:
     input:
