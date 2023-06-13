@@ -190,16 +190,16 @@ sub save_output_files
 
     if (opendir(D, $output))
     {
-    while (my $p = readdir(D))
-    {
-        my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/", "ws:" . $app->result_folder);
-        print STDERR "saving files to workspace... @cmd\n";
-        my $ok = IPC::Run::run(\@cmd);
-        if (!$ok)
-        {
-        warn "Error $? copying output with @cmd\n";
-        }
-    }
+	while (my $p = readdir(D))
+	{
+	    my @cmd = ("p3-cp", "--recursive", @suffix_map, "$output/$p", "ws:" . $app->result_folder);
+	    print STDERR "saving files to workspace... @cmd\n";
+	    my $ok = IPC::Run::run(\@cmd);
+	    if (!$ok)
+	    {
+		warn "Error $? copying output with @cmd\n";
+	    }
+	}
     closedir(D);
     }
 }
