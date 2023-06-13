@@ -21,17 +21,17 @@ rule_all_list = [
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
 ## multisample comparison and visualizations will either fail or be redundant if only one sample present
 if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_sankey_plots >clean_up_sankey_html_files > multiqc 
     msg = "preforming analysis for only one sample - DOES NOT INCLUDE multisample_comparison.html, multisample_krona.html"
     sys.stderr.write(msg)
-    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_sankey_plots >clean_up_sankey_html_files > multiqc 
 else:
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > clean_up_sankey_html_files > multisample_comp_table > clean_up_multisample_html_files > multiqc
     msg = "preforming analysis for multiple samples - INCLUDES multisample_comparison.html, multisample_krona.html"
     sys.stderr.write(msg)
     rule_all_list.append('output/multisample_comparison.html')
     rule_all_list.append('output/multisample_krona.html')
     rule_all_list.append('output/beta_diversity.csv')
     rule_all_list.append('clean_up/multisample_comparison_files')
-    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > clean_up_sankey_html_files > multisample_comp_table > clean_up_multisample_html_files > multiqc
 
 
 rule all:
@@ -181,7 +181,7 @@ rule clean_up_multisample_html_files:
         cl_multisample_comp_dir = directory('clean_up/multisample_comparison_files')
     shell:
         '''
-        mv {params.multisample_comp_dir} {output.cl_multisample_comp_dir}
+        mv {input.multisample_comp_dir} {output.cl_multisample_comp_dir}
         '''
 
 rule multiqc:
