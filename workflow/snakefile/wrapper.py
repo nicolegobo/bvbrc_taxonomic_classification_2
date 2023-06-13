@@ -7,7 +7,7 @@ import sys
 import shutil
 import subprocess
 
-def check_input_fastqs(input_dir, filename):
+def check_input_fastqs(input_dir, filename, files_to_zip):
     input_path = f"{input_dir}/{filename}"
     if input_path.endswith('fastq.gz'):
         return input_path
@@ -23,8 +23,7 @@ def check_input_fastqs(input_dir, filename):
         else:
             msg = '{} identified as unzipped, zipping for analysis \n'.format(input_path)
             sys.stderr.write(msg)
-            cmd = ["gzip", input_path]
-            subprocess.run(cmd)
+            files_to_zip.append(input_path)
             return zipped_path
 
     else:
@@ -101,9 +100,11 @@ def run_snakefile(input_dict, config):
     return
 
 
-def set_up_sample_dictionary(input_dir, input_dict, output_dir):
+def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
     # set up the sample dictionary
     #### paired reads ####
+    files_to_zip = []
+    to_copy = []
     if len(input_dict['paired_end_libs']) != 0:
         paired_sample_dict = {}
         ws_paired_reads = []
@@ -114,11 +115,11 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir):
 
         for i in range(len(ws_paired_reads)):
             read1_filename = ws_paired_reads[i]['read1'].split('/')[-1]
-            read1_filepath = check_input_fastqs(input_dir, read1_filename)
+            read1_filepath = check_input_fastqs(input_dir, read1_filename, files_to_zip)
             # shutil.copy(read1_filepath, '/home/nbowers/bvbrc-dev/dev_container/modules/bvbrc_taxonomic_classification_2/service-scripts/test')
 
             read2_filename = ws_paired_reads[i]['read2'].split('/')[-1]
-            read2_filepath = check_input_fastqs(input_dir, read2_filename)
+            read2_filepath = check_input_fastqs(input_dir, read2_filename, files_to_zip)
             sample_id = ws_paired_reads[i]['sample_id'].split('/')[-1]
             pe_r1_samplename = f"{sample_id}_R1.fastq.gz"
             pe_r2_samplename = f"{sample_id}_R2.fastq.gz"
@@ -126,8 +127,8 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir):
             paired_sample_dict[read1_filename] = pe_r1_samplename
             paired_sample_dict[read2_filename] = pe_r2_samplename
 
-            shutil.copy(read1_filepath, f"{input_dir}/pe_reads/{pe_r1_samplename}")
-            shutil.copy(read2_filepath, f"{input_dir}/pe_reads/{pe_r2_samplename}")
+            to_copy.append([read1_filepath, f"{input_dir}/pe_reads/{pe_r1_samplename}"])
+            to_copy.append([read2_filepath, f"{input_dir}/pe_reads/{pe_r2_samplename}"])
 
     
     #### single reads ####
@@ -141,12 +142,23 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir):
 
         for i in range(len(ws_single_end_reads)):
             se_filename = ws_single_end_reads[i]['read'].split('/')[-1]
-            se_filepath = check_input_fastqs(input_dir, se_filename)
+            se_filepath = check_input_fastqs(input_dir, se_filename, files_to_zip)
             sample_id = ws_single_end_reads[i]['sample_id']
             se_samplename = f"{sample_id}.fastq.gz"
             single_end_sample_dict[se_filename] = se_samplename
 
-            shutil.copy(se_filepath, f"{input_dir}/se_reads/{se_samplename}")
+            to_copy.append([se_filepath, f"{input_dir}/se_reads/{se_samplename}"])
+
+
+    #
+    # in parallel, gzip anything that needs to be gzipped
+    # We deferred the copy until after the zip
+    #
+    par_inp = "\n".join(files_to_zip + [""])
+    subprocess.run(["parallel", "-j", str(cores), "gzip", "{}"], input=par_inp,text=True)
+
+    for (src, dest) in to_copy:
+        shutil.copy(src, dest)
 
     # export the sample dictionary to .CSV
     with open(f"{output_dir}/sample_key.csv", 'w', newline='') as file:
@@ -180,7 +192,7 @@ def main(argv):
     input_dict = config['params']
     input_dir = config['input_data_dir']
     output_dir = config['output_data_dir']
-    set_up_sample_dictionary(input_dir, input_dict, output_dir)
+    set_up_sample_dictionary(input_dir, input_dict, output_dir, min(8, int(config['cores'])))
     
     try:
         load_hisat_indicies(input_dict)
