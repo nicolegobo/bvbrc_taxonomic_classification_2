@@ -49,6 +49,7 @@ rule hisat2_remove_host_dna:
     output:
         sam = 'output/{sample}/hisat2_results/{sample}_aligned_reads.sam',
         out = 'output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz',
+        hisat_summary = output/{sample}/hisat2_results/summary.txt'
     threads: 16
     shell:
         '''
@@ -62,7 +63,8 @@ rule hisat2_remove_host_dna:
             -U {input.raw_read} \
             --un-gz \
             {params.tmp_name} -S {output.sam} \
-            --threads {threads}
+            --threads {threads} \
+            > {input.hisat_summary}
 
         mv {params.tmp_name} {output.out}
         '''
