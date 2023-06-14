@@ -9,7 +9,7 @@ import subprocess
 
 def check_input_fastqs(input_dir, filename, files_to_zip):
     input_path = f"{input_dir}/{filename}"
-    if input_path.endswith('.fastq.gz') or input_path.endswith('.fq.gz') or :
+    if input_path.endswith('.fastq.gz') or input_path.endswith('.fq.gz'):
         return input_path
     
     elif input_path.endswith('.fastq') or input_path.endswith('.fq'):
@@ -18,18 +18,18 @@ def check_input_fastqs(input_dir, filename, files_to_zip):
         zipped_path = input_path + '.gz'
         # check if the zipped file already exists in the list of input files 
         if os.path.exists(zipped_path) == True:
-            msg = "zipped file exists using {}.gz instead \n".format(input_path)
+            msg =f"zipped file exists using {input_path}.gz instead \n"
             sys.stderr.write(msg)
             return zipped_path
 
         else:
-            msg = '{} identified as unzipped, zipping for analysis \n'.format(input_path)
+            msg = f"{input_path} identified as unzipped, zipping for analysis \n"
             sys.stderr.write(msg)
             files_to_zip.append(input_path)
             return zipped_path
 
     else:
-        msg = "Error {} not end in 'fastq' or 'fastq.gz'. \n {} ignored".format(input_path, input_path)
+        msg = f"Error {input_path} not end in 'fastq' or 'fastq.gz'. \n {input_path} ignored"
         sys.stderr.write(msg)
         pass
 
