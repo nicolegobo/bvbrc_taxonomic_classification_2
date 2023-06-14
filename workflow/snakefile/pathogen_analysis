@@ -11,9 +11,8 @@ workflow_dir = config["workflow_dir"]
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
-        expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
+        expand('clean_up/cl_{sample}/{sample}_sankey_files', sample=samples),
         'output/multiqc_report.html',
-        'output/multiqc_data/',
         'clean_up/multiqc_data',
         ]
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
@@ -82,7 +81,7 @@ rule clean_up_sankey_html_files:
         sankey_plot = 'output/{sample}/{sample}_sankey.html',
         sankey_dir = 'output/{sample}/{sample}_sankey_files/',
     output:
-        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
+        cl_sankey_dir = directory('clean_up/cl_{sample}/{sample}_sankey_files'),
     shell:
         '''
         mkdir -p {output.cl_sankey_dir}
@@ -119,10 +118,11 @@ rule multiqc:
         multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
     params:
         landing_dir = directory('output'),
+        tmp_multiqc_dir = directory('output/multiqc_data')
     output:
         'output/multiqc_report.html',
-        multiqc_dir = directory('output/multiqc_data/'),
         cl_multiqc_dir = directory('clean_up/multiqc_data')
+
     shell:
         '''
         multiqc --version
@@ -130,9 +130,10 @@ rule multiqc:
         multiqc . \
             -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
+            -f \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
         
         mkdir -p {output.cl_multiqc_dir}
 
-        mv {output.multiqc_dir} {output.cl_multiqc_dir}
+        mv {params.tmp_multiqc_dir} {output.cl_multiqc_dir}
         '''

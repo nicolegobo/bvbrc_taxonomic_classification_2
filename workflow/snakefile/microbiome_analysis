@@ -15,9 +15,8 @@ rule_all_list = [
         expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples),
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
-        expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
+        expand('clean_up/cl_{sample}/{sample}_sankey_files', sample=samples),
         'output/multiqc_report.html',
-        'output/multiqc_data/',
         'clean_up/multiqc_data',
         ]
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
@@ -44,8 +43,7 @@ rule bracken_abundance_estimation:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     params:
-        #kmer_distr = os.path.join(database_path, "database100mers.kmer_distrib"),
-        kmer_distr = "/home/nbowers/bvbrc-dev/dev_container/modules/taxonomic_classification_cloned_from_original/bvbrc_taxonomic_classification_cloned_from_original/tests/required_data/k2protocol_db/database100mers.kmer_distrib",
+        kmer_distr = os.path.join(database_path, "database100mers.kmer_distrib"),
         bracken_dir = 'output/{sample}/bracken_output',
         ave_read_length = '100',
         level_of_abundance_estimation = 's',
@@ -146,7 +144,7 @@ rule generate_sankey_plots:
         sankey_script = os.path.join(workflow_dir, "scripts/sankey_plot_gen.R")
     output:
         sankey_plot = 'output/{sample}/{sample}_sankey.html',
-        sankey_dir = directory('output/{sample}/{sample}_sankey_files/'),
+        sankey_dir = directory('output/{sample}/{sample}_sankey_files'),
     shell: 
         r'''
         {params.sankey_script} --input {input.bracken_report} --output {output.sankey_plot}
@@ -157,7 +155,7 @@ rule clean_up_sankey_html_files:
         sankey_plot = 'output/{sample}/{sample}_sankey.html',
         sankey_dir = 'output/{sample}/{sample}_sankey_files',
     output:
-        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
+        cl_sankey_dir = directory('clean_up/cl_{sample}/{sample}_sankey_files'),
     shell:
         '''
         mkdir -p {output.cl_sankey_dir}
@@ -169,7 +167,7 @@ rule multisample_comp_table:
         kraken2_report = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
     params:
         multisample_comparsion_script = os.path.join(workflow_dir, "scripts/pavian_multisample_comparsion.R"),
-        output_dir = 'output/'
+        output_dir = directory('output/')
     output:
         multi_comp = 'output/multisample_comparison.html',
         multisample_comp_dir = directory('output/multisample_comparison_files')
@@ -195,9 +193,9 @@ rule multiqc:
         multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
     params:
         landing_dir = 'output',
+        tmp_multiqc_dir = directory('output/multiqc_data')
     output:
         'output/multiqc_report.html',
-        multiqc_dir = directory('output/multiqc_data/'),
         cl_multiqc_dir = directory('clean_up/multiqc_data')
     shell:
         '''
@@ -206,9 +204,10 @@ rule multiqc:
         multiqc . \
             -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
+            -f \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
         
         mkdir -p {output.cl_multiqc_dir}
 
-        mv {output.multiqc_dir} {output.cl_multiqc_dir}
+        mv {params.tmp_multiqc_dir} {output.cl_multiqc_dir}
         '''

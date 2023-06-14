@@ -70,8 +70,7 @@ rule hisat2_remove_host_dna:
             -2 {input.r2} \
             --un-conc-gz \
             {params.tmp_name} -S {output.sam} \
-            --threads {threads} \
-            > {output.hisat_summary}
+            --threads {threads} > {output.hisat_summary}
 
         mv {params.fq_r1} {output.out_r1}
         mv {params.fq_r2} {output.out_r2}
