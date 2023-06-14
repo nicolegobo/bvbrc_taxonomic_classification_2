@@ -5,7 +5,6 @@ def edit_alpha_stats(input_csv, output_csv):
     with open(input_csv, 'r') as infile:
 
         # Open the output CSV file
-        #with open(output_csv, 'w', newline='') as outfile:
         with open(output_csv, 'w') as outfile:
             # Create a CSV reader and writer objects
             reader = csv.reader(infile)
@@ -30,11 +29,6 @@ def main(argv):
     input_csv = inputfile[0]
     output_csv = inputfile[1]
     edit_alpha_stats(input_csv, output_csv)
-    # input_dict = format_inputs(raw_params)
-    # check_input_fastqs()
-    # set_up_sample_dictionary(input_dict)
-    # run_snakefile(input_dict)
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])

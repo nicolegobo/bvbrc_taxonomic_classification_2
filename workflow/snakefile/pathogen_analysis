@@ -11,14 +11,14 @@ workflow_dir = config["workflow_dir"]
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
+        expand('clean_up/cl_{sample}/{sample}_sankey_files', sample=samples),
         'output/multiqc_report.html',
-        expand('clean_up/{sample}/{sample}_sankey_files', sample=samples),
         'clean_up/multiqc_data',
         ]
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
 ## multisample comparison and visualizations will either fail or be redundant if only one sample present
 if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
-    ruleorder: generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > clean_up_sankey_html_files > clean_up_k_text > multiqc
+    ruleorder: generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > clean_up_sankey_html_files > multiqc
     msg = "preforming analysis for only one sample - DOES NOT INCLUDE MULTISAMPLE_COMPARISON.HTML"
     sys.stderr.write(msg)
 
@@ -80,13 +80,11 @@ rule clean_up_sankey_html_files:
     input:
         sankey_plot = 'output/{sample}/{sample}_sankey.html',
         sankey_dir = 'output/{sample}/{sample}_sankey_files/',
-    params:
-        clean_up_dir = 'clean_up'
     output:
-        cl_sankey_dir = directory('clean_up/{sample}/{sample}_sankey_files'),
+        cl_sankey_dir = directory('clean_up/cl_{sample}/{sample}_sankey_files'),
     shell:
         '''
-        mkdir -p {params.clean_up_dir}
+        mkdir -p {output.cl_sankey_dir}
         mv {input.sankey_dir} {output.cl_sankey_dir}
         '''
 
@@ -120,11 +118,11 @@ rule multiqc:
         multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
     params:
         landing_dir = directory('output'),
-        multiqc_dir = directory('output/multiqc_data/'),
-        clean_up_dir = directory('clean_up')
+        tmp_multiqc_dir = directory('output/multiqc_data')
     output:
         'output/multiqc_report.html',
         cl_multiqc_dir = directory('clean_up/multiqc_data')
+
     shell:
         '''
         multiqc --version
@@ -132,9 +130,10 @@ rule multiqc:
         multiqc . \
             -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
+            -f \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
         
-        mkdir -p {params.clean_up_dir}
+        mkdir -p {output.cl_multiqc_dir}
 
-        mv {params.multiqc_dir} {params.clean_up_dir}
+        mv {params.tmp_multiqc_dir} {output.cl_multiqc_dir}
         '''
