@@ -14,13 +14,6 @@ xargs<- parser$parse_args()
 ### Get sample names from input files to name columns of report ###
 input_list <- unlist(strsplit(xargs$input, " "))
 
-# # if only one sample is run, the multicomparison cannot be preformed 
-# if (length(my_list) == 1) {
-#   print("one item in list")
-# } else {
-#   print("MORE than one item in list")
-# }
-
 # Initialize an empty list
 sample_name_list <- list()
 input_file_list <- list()
@@ -96,9 +89,8 @@ clrs <- round(seq(150, 225, length.out = length(brks) + 1), 0) %>%
 #clrs <- round(seq(60, 180, length.out = length(brks) + 1), 0) %>%
   {paste0("rgb(255",",", .,",", .,")")}
 
-
 ## apply table coloring/style to the data 
-multi_sample_table <- DT::datatable(reads_zscore_df,
+multi_sample_table <- DT::datatable(reads_zscore_df, rownames = FALSE,
                 filter = "bottom", selection = "single", escape = FALSE,
                 caption = "This is a tabular view of the identification results from multiple samples.
   The goal is to identify which microbes unique within each sample or common amongst all samples. The values in the
