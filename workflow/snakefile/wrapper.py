@@ -9,10 +9,12 @@ import subprocess
 
 def check_input_fastqs(input_dir, filename, files_to_zip):
     input_path = f"{input_dir}/{filename}"
-    if input_path.endswith('fastq.gz'):
+    if input_path.endswith('.fastq.gz') or input_path.endswith('.fq.gz') or :
         return input_path
     
-    elif input_path.endswith('.fastq'):
+    elif input_path.endswith('.fastq') or input_path.endswith('.fq'):
+    # might be fix
+    #elif input_path.endswith('fastq'):
         zipped_path = input_path + '.gz'
         # check if the zipped file already exists in the list of input files 
         if os.path.exists(zipped_path) == True:
