@@ -11,11 +11,12 @@ workflow_dir = config["workflow_dir"]
 database_path = config["params"]["database"]
 
 rule_all_list = [
-        expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples),
+        expand('output/{sample}/{sample}_bracken_output.txt', sample=samples),
         expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples),
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         expand('output/{sample}/{sample}_sankey.html', sample=samples),
         expand('clean_up/cl_{sample}/{sample}_sankey_files', sample=samples),
+        'output/alpha_diversity.csv',
         'output/multiqc_report.html',
         'clean_up/multiqc_data',
         ]
@@ -49,7 +50,7 @@ rule bracken_abundance_estimation:
         level_of_abundance_estimation = 's',
         read_threshold = '10'
     output:
-        bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
+        bracken_output = 'output/{sample}/{sample}_bracken_output.txt',
         bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     shell:
         '''
@@ -66,7 +67,7 @@ rule bracken_abundance_estimation:
 
 rule calculate_alpha_diversity:
     input:
-        bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
+        bracken_output = 'output/{sample}/{sample}_bracken_output.txt',
     params:
         temp_alpha_diversity_csv = '{sample}_alpha_diversity_tmp.csv',
         alpha_stats_cleanup_script = os.path.join(workflow_dir, 'scripts/alpha_stats_cleanup.py')
@@ -74,30 +75,41 @@ rule calculate_alpha_diversity:
         alpha_diversity_csv = 'output/{sample}/bracken_output/{sample}_alpha_diversity.csv'
     shell:
         '''
-        alpha_diversity.py \
-            -f {input.bracken_output} -a BP >> {output.alpha_diversity_csv}
-
-        alpha_diversity.py  \
-            -f {input.bracken_output} -a Sh >> {output.alpha_diversity_csv}
-
-        alpha_diversity.py  \
-            -f {input.bracken_output} -a F >> {output.alpha_diversity_csv}
+        echo {wildcards.sample} alpha stats >> {params.temp_alpha_diversity_csv}
 
         alpha_diversity.py \
-            -f {input.bracken_output} -a Si >> {output.alpha_diversity_csv}
+            -f {input.bracken_output} -a BP >> {params.temp_alpha_diversity_csv}
 
         alpha_diversity.py  \
-            -f {input.bracken_output} -a ISi >> {output.alpha_diversity_csv}
+            -f {input.bracken_output} -a Sh >> {params.temp_alpha_diversity_csv}
 
-        python {params.alpha_stats_cleanup_script} {input.bracken_output} {params.temp_alpha_diversity_csv}
+        alpha_diversity.py  \
+            -f {input.bracken_output} -a F >> {params.temp_alpha_diversity_csv}
 
-        mv {wildcards.sample}_alpha_diversity_tmp.csv {output.alpha_diversity_csv}
+        alpha_diversity.py \
+            -f {input.bracken_output} -a Si >> {params.temp_alpha_diversity_csv}
+
+        alpha_diversity.py  \
+            -f {input.bracken_output} -a ISi >> {params.temp_alpha_diversity_csv}
+
+        python {params.alpha_stats_cleanup_script} {params.temp_alpha_diversity_csv} {output.alpha_diversity_csv}
+        '''
+
+rule merge_alpha_diversity_stats:
+    input:
+        #using set so each sample appears only once
+        alpha_diversity_csv = set(expand('output/{sample}/bracken_output/{sample}_alpha_diversity.csv', sample=samples))
+    output:
+        alpha_stats_merge = "output/alpha_diversity.csv"
+    shell:
+        '''
+        cat {input.alpha_diversity_csv} > {output.alpha_stats_merge}
         '''
 
 rule calculate_beta_diversity:
     input:
         # using set so each sample appears only once 
-        bracken_outputs = set(expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample=samples))
+        bracken_outputs = set(expand('output/{sample}/{sample}_bracken_output.txt', sample=samples))
     output:
         beta_diversity_csv = 'output/beta_diversity.csv'
     shell:
