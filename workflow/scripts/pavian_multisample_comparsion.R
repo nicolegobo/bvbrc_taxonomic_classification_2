@@ -86,8 +86,9 @@ sample_cols <- reads_zscore_df[, -c(1:4)]
 #Set up breaks and colors 
 brks <- quantile(sample_cols, probs = seq(.05, .95, .05), na.rm = TRUE, names = FALSE)
 clrs <- round(seq(150, 225, length.out = length(brks) + 1), 0) %>%
-#clrs <- round(seq(60, 180, length.out = length(brks) + 1), 0) %>%
   {paste0("rgb(255",",", .,",", .,")")}
+# Reverse the colors
+clrs <- rev(clrs)
 
 ## apply table coloring/style to the data 
 multi_sample_table <- DT::datatable(reads_zscore_df, rownames = FALSE,

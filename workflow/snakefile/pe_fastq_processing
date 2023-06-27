@@ -2,6 +2,7 @@ import sys
 #### running from service-script ####
 samples = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").sample
 read_nums = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").read_num
+
 msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING \n'
 sys.stderr.write(msg)
 configfile: "config.json"
@@ -55,7 +56,6 @@ rule hisat2_remove_host_dna:
         sam = 'output/{sample}/hisat2_results/{sample}_aligned_reads.sam',
         out_r1 = 'output/{sample}/hisat2_results/{sample}_host_removed_R1.fastq.gz',
         out_r2 = 'output/{sample}/hisat2_results/{sample}_host_removed_R2.fastq.gz',
-        hisat_summary = 'output/{sample}/hisat2_results/summary.txt'
     threads: 16
     shell:
         '''
@@ -70,7 +70,7 @@ rule hisat2_remove_host_dna:
             -2 {input.r2} \
             --un-conc-gz \
             {params.tmp_name} -S {output.sam} \
-            --threads {threads} > {output.hisat_summary}
+            --threads {threads}
 
         mv {params.fq_r1} {output.out_r1}
         mv {params.fq_r2} {output.out_r2}
