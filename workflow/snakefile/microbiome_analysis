@@ -177,7 +177,7 @@ rule generate_sankey_plots:
 rule clean_up_sankey_html_files:
     input:
         sankey_plot = 'output/{sample}_sankey.html',
-        sankey_dir = 'output/{sample}/{sample}_sankey_files',
+        sankey_dir = 'output/{sample}_sankey_files',
     output:
         cl_sankey_dir = directory('clean_up/cl_{sample}/{sample}_sankey_files'),
     shell:

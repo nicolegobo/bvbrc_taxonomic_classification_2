@@ -2,9 +2,7 @@ import csv
 import sys
 
 import pandas as pd
-#import plotly.express as px
 import plotly.graph_objects as go
-#import plotly.offline as offline
 
 def edit_alpha_stats(input_csv, output_csv, output_html):
     with open(input_csv, 'r') as infile:

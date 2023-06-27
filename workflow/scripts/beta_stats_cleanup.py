@@ -1,12 +1,9 @@
+import re
+import sys
+
 import pandas as pd
-#import plotly.graph_objects as go
 import plotly.express as px
 import plotly.offline as offline
-
-
-#import csv
-import sys
-import re
 
 def edit_beta_stats(input_csv, output_csv, output_html):
     table_start = int
@@ -30,19 +27,6 @@ def edit_beta_stats(input_csv, output_csv, output_html):
                     sample_dict[numeric_value] = sample_id
                 else:
                     print("Pattern not found.")
-                    # old
-                # Parsing the sample_name
-                # print(line)
-                # match = re.search(r'\s(\w+)_', line)
-                # if match:
-                #     sample_name = match.group(1)
-                #     print(sample_name)
-    #             # Parsing the numeric value following the '#'
-    #             match = re.search(r'#(\d+)', line)
-    #             if match:
-    #                 numeric_value = int(match.group(1))
-    #                 sample_dict[numeric_value] = sample_name
-
             if line.startswith("x"):
                 table_start = my_lines.index(line)
     df = pd.read_csv(input_csv, skiprows=table_start, sep='\t', index_col= 0)
@@ -64,7 +48,6 @@ def edit_beta_stats(input_csv, output_csv, output_html):
     fig = px.imshow(df, text_auto=True)
     offline.plot(fig, filename=output_html, auto_open=False)
 
-  
 # run the script from service-script/app_taxonomic_classification 
 def main(argv):
     inputfile = argv

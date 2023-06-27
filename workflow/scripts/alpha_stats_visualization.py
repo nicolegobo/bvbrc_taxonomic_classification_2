@@ -7,7 +7,6 @@ def alpha_stats_viz(input_csvs, output_csv, output_html):
     main_df = pd.DataFrame()
     dfs = []
     for input_csv in input_csvs:
-        # df = pd.read_csv(input_csv, sep=':', index_col= 0)
         df = pd.read_csv(input_csv, sep=':', index_col="Alpha Diversity Tests")
         # Set the number of significant figures
         significant_figures = 3
