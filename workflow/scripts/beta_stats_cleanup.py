@@ -14,19 +14,13 @@ def edit_beta_stats(input_csv, output_csv, output_html):
             sample_id = ""
             # set up dictionary
             if line.startswith("#"):    
-                # Define a regex pattern to extract the desired part
-                pattern = r"/([^/]+)_id_bracken_output\.txt"
-
-                # Use re.search() to find the matching pattern in the string
-                match = re.search(pattern, line)
-                if match:
-                    sample_id = match.group(1)
-                    num_pattern = r"#(\d+)"
-                    num_match = re.search(num_pattern, line)
-                    numeric_value = int(num_match.group(1))
-                    sample_dict[numeric_value] = sample_id
-                else:
-                    print("Pattern not found.")
+                parts = line.split()
+                sample_id = parts[1].rstrip('_')
+                sample_id = sample_id.replace("_bracken_output.txt", "")
+                num_pattern = r"#(\d+)"
+                num_match = re.search(num_pattern, line)
+                numeric_value = int(num_match.group(1))
+                sample_dict[numeric_value] = sample_id
             if line.startswith("x"):
                 table_start = my_lines.index(line)
     df = pd.read_csv(input_csv, skiprows=table_start, sep='\t', index_col= 0)

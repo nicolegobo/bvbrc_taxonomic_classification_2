@@ -76,7 +76,7 @@ rule calculate_alpha_diversity:
         alpha_diversity_html = 'output/{sample}/{sample}_alpha_diversity.html'
     shell:
         '''
-        echo Alpha Diversity Tests: {wildcards.sample} alpha stats >> {params.temp_alpha_diversity_csv}
+        echo Alpha Diversity Tests: {wildcards.sample} >> {params.temp_alpha_diversity_csv}
 
         alpha_diversity.py \
             -f {input.bracken_output} -a BP >> {params.temp_alpha_diversity_csv}
