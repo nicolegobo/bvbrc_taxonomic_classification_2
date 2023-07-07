@@ -106,7 +106,7 @@ build_sankey_network <- function(my_report, taxRanks =  c("D","K","P","C","O","F
     )
 }
 ## end function 
-
+print(sample_name)
 
 args = commandArgs(trailingOnly=TRUE)
 
@@ -116,4 +116,4 @@ test <- my_report[[1]]
 sankey_1 <- build_sankey_network (test, taxRanks =  c("D","K","P","C","O","F","G","S"), maxn=10,
                      zoom = F, title = sample_name)
 
-htmlwidgets::saveWidget(sankey_1, file=xargs$output, selfcontained = TRUE)
+htmlwidgets::saveWidget(sankey_1, file=xargs$output, title = sample_name, selfcontained = TRUE)
