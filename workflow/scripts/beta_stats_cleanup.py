@@ -40,6 +40,8 @@ def edit_beta_stats(input_csv, output_csv, output_html):
     
     # make the heatmap
     fig = px.imshow(df, text_auto=True)
+    fig.update_yaxes(showgrid=False)
+    fig.update_xaxes(showgrid=False)
     offline.plot(fig, filename=output_html, auto_open=False)
 
 # run the script from service-script/app_taxonomic_classification 
