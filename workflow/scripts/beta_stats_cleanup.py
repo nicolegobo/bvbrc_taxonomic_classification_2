@@ -17,6 +17,8 @@ def edit_beta_stats(input_csv, output_csv, output_html):
                 parts = line.split()
                 sample_id = parts[1].rstrip('_')
                 sample_id = sample_id.replace("_bracken_output.txt", "")
+                parts=sample_id.split("bracken_output/")
+                sample_id = parts[1]
                 num_pattern = r"#(\d+)"
                 num_match = re.search(num_pattern, line)
                 numeric_value = int(num_match.group(1))
@@ -39,9 +41,13 @@ def edit_beta_stats(input_csv, output_csv, output_html):
         df.to_csv(out_csv, index=True)
     
     # make the heatmap
-    fig = px.imshow(df, text_auto=True)
-    fig.update_yaxes(showgrid=False)
-    fig.update_xaxes(showgrid=False)
+    fig = px.imshow(df, text_auto=True,
+                    labels=dict(x="Sample IDs", y="Sample IDs", color="Bray-Curtis Index"),
+                    title ='Beta Diversity (Bray-Curtis Index of Dissimilarity) <br><sup> If two samples have the same microbes at the same abundance the disimilarity is 0. Conversely, if there are no shared microbes between the disimilarity is 1. </sup>'
+                    )
+
+    fig.update_yaxes(showgrid=True, tickangle=45)
+    fig.update_xaxes(showgrid=True, tickangle=45)
     offline.plot(fig, filename=output_html, auto_open=False)
 
 # run the script from service-script/app_taxonomic_classification 
