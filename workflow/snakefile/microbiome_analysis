@@ -78,21 +78,21 @@ rule calculate_alpha_diversity:
         '''
         echo Alpha Diversity Tests: {wildcards.sample} >> {params.temp_alpha_diversity_csv}
 
-        alpha_diversity.py \
-            -f {input.bracken_output} -a BP >> {params.temp_alpha_diversity_csv}
-
         alpha_diversity.py  \
             -f {input.bracken_output} -a Sh >> {params.temp_alpha_diversity_csv}
-
-        alpha_diversity.py  \
-            -f {input.bracken_output} -a F >> {params.temp_alpha_diversity_csv}
-
+        
         alpha_diversity.py \
             -f {input.bracken_output} -a Si >> {params.temp_alpha_diversity_csv}
 
-        alpha_diversity.py  \
+        alpha_diversity.py \
             -f {input.bracken_output} -a ISi >> {params.temp_alpha_diversity_csv}
-        
+
+        alpha_diversity.py \
+            -f {input.bracken_output} -a BP >> {params.temp_alpha_diversity_csv}
+
+        alpha_diversity.py \
+            -f {input.bracken_output} -a F >> {params.temp_alpha_diversity_csv}
+
         echo          >> {params.temp_alpha_diversity_csv}
 
         python3 {params.alpha_stats_cleanup_script} {params.temp_alpha_diversity_csv} {output.alpha_diversity_csv} {output.alpha_diversity_html}
