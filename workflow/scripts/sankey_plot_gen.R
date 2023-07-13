@@ -106,7 +106,6 @@ build_sankey_network <- function(my_report, taxRanks =  c("D","K","P","C","O","F
     )
 }
 ## end function 
-print(sample_name)
 
 args = commandArgs(trailingOnly=TRUE)
 
