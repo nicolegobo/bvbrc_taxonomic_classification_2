@@ -9,7 +9,7 @@
     "id": "host_genome",
     "desc": "host genome",
     "required": 1,
-    "default": "Homo sapiens",
+    "default": "no_host",
     "label": "Host Genome",
     "type": "enum",
     "enum": [
@@ -22,7 +22,8 @@
         "gallus_gallus",
         "macaca_mulatta",
         "mustela_putorius_furo",
-        "sus_scrofa"
+        "sus_scrofa",
+        "no_host"
     ]
   },
   {
