@@ -30,7 +30,7 @@ host_dict = {"homo_sapiens": "GCF_000001405.39_GRCh38.p13_genomic",
 if host_genome == "no_host":
     ruleorder: fastqc_raw_reads > classify_with_kraken
     hisat_indices = None
-    msg = 'No host selected. SHIPPING Hisat2 to remove host dna and fastqc on host removed reads'
+    msg = 'No host selected. SKIPPING Hisat2 to remove host dna and fastqc on host removed reads'
 else:
     # append to rule all list 
     rule_all_list.append(expand('output/{sample}/hisat2_results/{sample}_host_removed_R{read_num}.fastq.gz', sample=samples, read_num=read_nums)),
