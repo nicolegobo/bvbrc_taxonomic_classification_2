@@ -9,7 +9,7 @@ configfile: "config.json"
 database_path = config["params"]["database"]
 ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
 host_genome = config["params"]["host_genome"]
-analysis_type = config["params"]["analysis_type"]
+
 rule_all_list = [
         expand('output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.html', sample=samples, read_num=read_nums),
         expand('output/{sample}/kraken_output/{sample}_k2_output.txt', sample=samples),
@@ -134,7 +134,6 @@ rule classify_with_kraken:
     params:
         database = database_path,
         kraken_dir = 'output/{sample}/kraken_output',
-        report_min_flag = kraken_type
     output:
         k2_output = 'output/{sample}/kraken_output/{sample}_k2_output.txt',
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
@@ -147,7 +146,7 @@ rule classify_with_kraken:
             --threads {threads} \
             --minimum-hit-groups 3 \
             --report-minimizer-data \
-            {params.report_min_flag} \
+            --memory-mapping \
             --report {output.k2report} \
             --confidence 0.1 \
             --paired {input.clean_r1} {input.clean_r2} \
