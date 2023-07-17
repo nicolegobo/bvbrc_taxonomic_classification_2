@@ -39,25 +39,29 @@ def format_inputs(raw_params):
 
 def load_hisat_indicies(input_dict):
     # get the refrence genome from parameters
-    host_dict = {"homo_sapiens": "/9606/GRCh38.p13/GCF_000001405.39_GRCh38.p13_genomic.ht2.tar",
-        "mus_musculus": "/10090/GRCm38.p6/GCF_000001635.26_GRCm38.p6_genomic.ht2.tar",
-        "rattus_norvegicus" : "/10116/Rnor_6.0/GCF_000001895.5_Rnor_6.0_genomic.ht2.tar",
-        "caenorhabditis_elegans" : "/6239/WBcel235/GCF_000002985.6_WBcel235_genomic.ht2.tar",
-        "drosophila_melanogaster_strain" : "/7227/Release_6_plus_ISO1_MT/GCF_000001215.4_Release_6_plus_ISO1_MT_genomic.ht2.tar",
-        "danio_rerio_strain_tuebingen": "/7955/GRCz11/GCF_000002035.6_GRCz11_genomic.ht2.tar",
-        "gallus_gallus" : "/9031/GRCg6a/GCF_000002315.6_GRCg6a_genomic.ht2.tar",
-        "macaca_mulatta" : "/9544/Mmul_10/GCF_003339765.1_Mmul_10_genomic.ht2.tar",
-        "mustela_putorius_furo" : "/9669/MusPutFur1.0/GCF_000215625.1_MusPutFur1.0_genomic.ht2.tar",
-        "sus_scrofa" : "/9823/Sscrofa11.1/GCF_000003025.6_Sscrofa11.1_genomic.ht2.tar"}
+    if input_dict['host_genome'] == "no_host":
+        msg = "No host genome selected. Not getting hisat indices"
+        sys.stderr.write(msg)
+    else:
+        host_dict = {"homo_sapiens": "/9606/GRCh38.p13/GCF_000001405.39_GRCh38.p13_genomic.ht2.tar",
+            "mus_musculus": "/10090/GRCm38.p6/GCF_000001635.26_GRCm38.p6_genomic.ht2.tar",
+            "rattus_norvegicus" : "/10116/Rnor_6.0/GCF_000001895.5_Rnor_6.0_genomic.ht2.tar",
+            "caenorhabditis_elegans" : "/6239/WBcel235/GCF_000002985.6_WBcel235_genomic.ht2.tar",
+            "drosophila_melanogaster_strain" : "/7227/Release_6_plus_ISO1_MT/GCF_000001215.4_Release_6_plus_ISO1_MT_genomic.ht2.tar",
+            "danio_rerio_strain_tuebingen": "/7955/GRCz11/GCF_000002035.6_GRCz11_genomic.ht2.tar",
+            "gallus_gallus" : "/9031/GRCg6a/GCF_000002315.6_GRCg6a_genomic.ht2.tar",
+            "macaca_mulatta" : "/9544/Mmul_10/GCF_003339765.1_Mmul_10_genomic.ht2.tar",
+            "mustela_putorius_furo" : "/9669/MusPutFur1.0/GCF_000215625.1_MusPutFur1.0_genomic.ht2.tar",
+            "sus_scrofa" : "/9823/Sscrofa11.1/GCF_000003025.6_Sscrofa11.1_genomic.ht2.tar"}
 
-    msg = "using ftp to get hisat indicies for host {}".format(input_dict['host_genome'])
-    sys.stderr.write(msg)
-    # get hisat indicies
-    curl_cmd = ['curl', '-o', 'hisat_indices_tar_file', 'ftp.bvbrc.org/host_genomes{}'.format(host_dict[input_dict['host_genome']])];
-    subprocess.run(curl_cmd);
-    # cmd 2
-    tar_cmd = ['tar', '-xvf', 'hisat_indices_tar_file']
-    subprocess.run(tar_cmd)
+        msg = "using ftp to get hisat indicies for host {}".format(input_dict['host_genome'])
+        sys.stderr.write(msg)
+        # get hisat indicies
+        curl_cmd = ['curl', '-o', 'hisat_indices_tar_file', 'ftp.bvbrc.org/host_genomes{}'.format(host_dict[input_dict['host_genome']])];
+        subprocess.run(curl_cmd);
+        # cmd 2
+        tar_cmd = ['tar', '-xvf', 'hisat_indices_tar_file']
+        subprocess.run(tar_cmd)
     return
 
 # run the snakefile command
@@ -73,7 +77,8 @@ def run_snakefile(input_dict, config):
         "--cores", str(config['cores']),
         "--use-singularity",
         "--verbose",
-        "--printshellcmds"]
+        "--printshellcmds",
+        ]
 
     if config['cores'] == 1:
         common_params.append("--debug")
