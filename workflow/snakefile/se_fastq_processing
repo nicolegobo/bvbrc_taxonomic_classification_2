@@ -6,11 +6,39 @@ sys.stderr.write(msg)
 configfile: "config.json"
 database_path = config["params"]["database"]
 host_genome = config["params"]["host_genome"]
+save_classified = config["params"]["save_classified_sequences"]
+save_unclassified = config["params"]["save_unclassified_sequences"]
+confidence_interval = config["params"]["confidence_interval"]
 
 rule_all_list = [
         expand('output/{sample}/fastqc_results/raw_reads/raw_{sample}_fastqc.html', sample=samples),
         expand('output/{sample}/kraken_output/{sample}_k2_output.txt', sample=samples),
         ]
+
+if save_classified == True:
+    cf = "--classified-out"
+    co = "{sample}_classified_reads.fastq"
+    co_gz = "output/{sample}/kraken_output/{sample}_classified_reads.fastq.gz"
+    rule_all_list.append(expand("output/{sample}/kraken_output/{sample}_classified_reads.fastq.gz", sample=samples))
+    msg = "Adding save classified sequences to kraken2 command. \n"
+    sys.stderr.write(msg)
+else:
+    cf = ""
+    co = ""
+    co_gz = ""
+
+if save_unclassified == True:
+    ucf = "--unclassified-out"
+    uco = "{sample}_unclassified_reads.fastq"
+    uco_gz = "output/{sample}/kraken_output/{sample}_unclassified_reads.fastq.gz"
+    rule_all_list.append(expand("output/{sample}/kraken_output/{sample}_unclassified_reads.fastq.gz", sample=samples))
+    msg = "Adding save unclassified sequences to kraken2 command. \n"
+    sys.stderr.write(msg)
+else:
+    ucf = ""
+    uco = ""
+    uco_gz = ""
+
 
 host_dict = {"homo_sapiens": "GCF_000001405.39_GRCh38.p13_genomic",
     "mus_musculus": "GCF_000001635.26_GRCm38.p6_genomic",
@@ -27,6 +55,7 @@ host_dict = {"homo_sapiens": "GCF_000001405.39_GRCh38.p13_genomic",
 if host_genome == "no_host":
     ruleorder: fastqc_raw_reads > classify_with_kraken
     hisat_indices = None
+    k_input = "staging/se_reads/{sample}.fastq.gz"
     msg = 'No host selected. SKIPPING Hisat2 to remove host dna and fastqc on host removed reads'
 else:
     # append to rule all list 
@@ -36,6 +65,7 @@ else:
     ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
     # select the correct indicies
     hisat_indices = host_dict[host_genome]
+    k_input = "output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz"
     msg = f'Host genome {host_genome} selected. ADDING Hisat2 to remove host dna and fastqc on host removed reads'
 
 sys.stderr.write(msg)
@@ -118,10 +148,15 @@ rule fastqc_on_host_removed_reads:
 
 rule classify_with_kraken:
     input:
-        clean_se = 'output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz'
+        kraken2_input = k_input
     params:
         database = database_path,
-        kraken_dir = 'output/{sample}/kraken_output'
+        kraken_dir = 'output/{sample}/kraken_output',
+        classified_flag = cf,
+        classified_fq = co,
+        unclassified_flag = ucf,
+        unclassified_fq = uco,
+        ci = confidence_interval
     output:
         k2_output = 'output/{sample}/kraken_output/{sample}_k2_output.txt',
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
@@ -135,8 +170,35 @@ rule classify_with_kraken:
             --minimum-hit-groups 3 \
             --report-minimizer-data \
             --memory-mapping \
-            --confidence 0.1 \
-            {input.clean_se} \
+            {params.classified_flag} \
+            {params.classified_fq} \
+            {params.unclassified_flag} \
+            {params.unclassified_fq} \
             --report {output.k2report} \
+            {input.kraken2_input} \
+            --confidence {params.ci} \
             --output {output.k2_output}
+        '''
+
+rule zip_n_move_classified_reads:
+    input:
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+    params:
+        raw_classified = co
+    output:
+        zippped_classified = co_gz
+    shell:
+        '''
+        gzip -c {params.raw_classified} > {output.zippped_classified}
+        '''
+rule zip_n_move_unclassified_reads:
+    input:
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+    params:
+        raw_unclassified = uco,
+    output:
+        zippped_unclassified = uco_gz
+    shell:
+        '''
+        gzip -c {params.raw_unclassified} > {output.zippped_unclassified}
         '''

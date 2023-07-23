@@ -133,6 +133,39 @@
     "required": 1
   },
   {
+    "default" : false,
+    "required" : 0,
+    "type" : "bool",
+    "id" : "save_classified_sequences",
+    "label" : "Save the classified sequences"
+  },
+  {
+    "default" : false,
+    "required" : 0,
+    "type" : "bool",
+    "id" : "save_unclassified_sequences",
+    "label" : "Save the unclassified sequences"
+  },
+  {
+    "id":"confidence_interval",
+    "default": 0.1,
+    "required" : 0,
+    "enum": [
+      0,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1,
+        ],
+    "desc": "confidence interval",
+  },
+  {
     "id": "output_path",
     "label": "Output Folder",
     "required": 1,
