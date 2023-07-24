@@ -191,6 +191,7 @@ rule zip_n_move_classified_reads:
         '''
         gzip -c {params.raw_classified} > {output.zippped_classified}
         '''
+
 rule zip_n_move_unclassified_reads:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
