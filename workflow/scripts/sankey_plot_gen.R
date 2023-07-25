@@ -12,9 +12,10 @@ xargs<- parser$parse_args()
 input_report <- xargs$input
 
 # get from path sample name
-pattern <- "^(.*/)?([^/]*)_k2_report\\.txt$"
-sample_name <- sub(pattern, "\\2", input_report)
-
+#pattern <- "^(.*/)?([^/]*)_k2_report\\.txt$"
+#sample_name <- sub(pattern, "\\2", input_report)
+file_name <- sub(".*/bracken_output/", "", input_report)
+sample_name <- sub("*_bracken_report.txt", "", file_name)
 
 ### defines the build_sankey_networkfunction from Pavian ###
 ### this is where the analysis begins

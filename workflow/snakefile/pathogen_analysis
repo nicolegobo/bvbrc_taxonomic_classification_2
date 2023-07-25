@@ -10,7 +10,7 @@ workflow_dir = config["workflow_dir"]
 
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
-        expand('output/{sample}/{sample}_sankey.html', sample=samples),
+        expand('output/{sample}_sankey.html', sample=samples),
         expand('clean_up/cl_{sample}/{sample}_sankey_files', sample=samples),
         'output/multiqc_report.html',
         'clean_up/multiqc_data',
@@ -65,7 +65,7 @@ rule generate_sankey_plots:
     params:
         sankey_script = os.path.join(workflow_dir, "scripts/sankey_plot_gen.R")
     output:
-        sankey_plot = 'output/{sample}/{sample}_sankey.html',
+        sankey_plot = 'output/{sample}_sankey.html',
         sankey_dir = directory('output/{sample}/{sample}_sankey_files/')
     shell: 
         r'''
@@ -74,8 +74,8 @@ rule generate_sankey_plots:
 
 rule clean_up_sankey_html_files:
     input:
-        sankey_plot = 'output/{sample}/{sample}_sankey.html',
-        sankey_dir = 'output/{sample}/{sample}_sankey_files/',
+        sankey_plot = 'output/{sample}_sankey.html',
+        sankey_dir = 'output/{sample}_sankey_files/',
     output:
         cl_sankey_dir = directory('clean_up/cl_{sample}/{sample}_sankey_files'),
     shell:
