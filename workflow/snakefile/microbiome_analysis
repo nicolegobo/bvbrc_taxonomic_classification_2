@@ -4,6 +4,7 @@ import sys
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
 se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
+print(samples)
 msg = 'snakefile command recieved - MICROBOIME ANALYSIS. \n'
 sys.stderr.write(msg)
 configfile: "config.json"
@@ -137,27 +138,23 @@ rule generate_sample_krona_plots:
     input:
         bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     output:
-        b_txt = 'output/{sample}/bracken_output/{sample}.b.krona.txt',
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        kreport2krona.py \
-            --report-file {input.bracken_report} --output {output.b_txt}
-
-        ktImportText \
-            {output.b_txt} \
+        ktImportTaxonomy -t 5 -m 3 \
+            {input.bracken_report} \
             -o {output.krona_html}
         '''
 
 rule generate_multisample_krona_plots:
     input:
-        b_txt = set(expand('output/{sample}/bracken_output/{sample}.b.krona.txt', sample = samples))
+        bracken_reports = set(expand('output/{sample}/bracken_output/{sample}_bracken_report.txt', sample = samples))
     output:
         set_krona_plot = 'output/multisample_krona.html'
     shell:
         '''
-        ktImportText \
-            {input.b_txt} \
+        ktImportTaxonomy -t 5 -m 3 \
+            {input.bracken_reports} \
             -o {output.set_krona_plot}
         '''
 

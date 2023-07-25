@@ -39,27 +39,23 @@ rule generate_sample_krona_plots:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     output:
-        k_text = 'output/{sample}/kraken_output/{sample}.b.krona.txt',
         krona_html = 'output/{sample}/{sample}_krona.html'
     shell:
         '''
-        kreport2krona.py \
-            --report-file {input.k2report} --output {output.k_text}
-
-        ktImportText \
-            {output.k_text} \
+        ktImportTaxonomy -t 7 -m 3 \
+            {input.k2report} \
             -o {output.krona_html}
         '''
 
 rule generate_multisample_krona_plots:
     input:
-        k_text = set(expand('output/{sample}/kraken_output/{sample}.b.krona.txt', sample=samples))
+        k_reports = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample=samples))
     output:
         set_krona_plot = 'output/multisample_krona.html'
     shell:
         '''
-        ktImportText \
-            {input.k_text} \
+        ktImportTaxonomy -t 7 -m 3 \
+            {input.k_reports} \
             -o {output.set_krona_plot}
         '''
 
