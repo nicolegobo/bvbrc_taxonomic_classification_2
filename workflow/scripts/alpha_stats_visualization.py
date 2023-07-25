@@ -2,7 +2,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import sys
 
-
 def alpha_stats_viz(input_csvs, output_csv, output_html):
     main_df = pd.DataFrame()
     dfs = []
@@ -35,18 +34,18 @@ def alpha_stats_viz(input_csvs, output_csv, output_html):
                         layout=layout)
     figure.add_annotation(text= 
             "<br> \
-            <b>Alpha diversity</b> reflects diversity (how similar or how different) the microbes are within a single sample. <br> \
             All analyses are run at the species level. <br> \
+            <b>Alpha diversity</b> reflects diversity (how similar or how different) the microbes are within a single sample. <br> \
             <br> \
-            <b>Shannon diversity</b> index tells you how diverse the species in a given community are. A<b>higher value</b> \
-            indicates a greater number of species and the evenness of their abundance. If only one species was assigned in the  <br> \
+            <b>Shannon diversity</b> index tells you how diverse the species in a given community are. A <b>higher value</b>  <br> \
+            indicates a greater number of species and the evenness of their abundance. If only one species was assigned in the <br> \
             sample, the index would be 0. <br> \
             <br> \
-            <b>Simpsons diversity index</b> is a  measure of diversity which takes into account the number of species present <br> \
+            <b>Simpsons diversity index</b> is a measure of diversity which takes into account the number of species present <br> \
             and their relative abundance. If a sample has a lot of species but only a few prominent taxa, the diversity is <br> \
             still less. Here a <b>higher value</b> indicates <b>lower diversity</b>. It will always be from zero to one. <br> \
             <br> \
-            <b>Simpsons reciprocal index</b>  Using the reciprocal of the Simpsons diversity index is more intuitive, <br> \
+            <b>Simpsons reciprocal index </b>  Using the reciprocal of the Simpsons diversity index is more intuitive, <br> \
             a <b>higher value</b> indicates <b>higher diversity</b>. <br> \
             <br> \
             <b>Berger-Parker index</b> shows the proportional importance of the most abundant species. A <b>higher value</b> <br> \
