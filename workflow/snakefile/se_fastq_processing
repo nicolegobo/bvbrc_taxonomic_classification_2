@@ -9,6 +9,7 @@ host_genome = config["params"]["host_genome"]
 save_classified = config["params"]["save_classified_sequences"]
 save_unclassified = config["params"]["save_unclassified_sequences"]
 confidence_interval = config["params"]["confidence_interval"]
+ruleorder: fastqc_raw_reads > classify_with_kraken
 
 rule_all_list = [
         expand('output/{sample}/fastqc_results/raw_reads/raw_{sample}_fastqc.html', sample=samples),
@@ -53,7 +54,6 @@ host_dict = {"homo_sapiens": "GCF_000001405.39_GRCh38.p13_genomic",
 
 # setting rules according to host 
 if host_genome == "no_host":
-    ruleorder: fastqc_raw_reads > classify_with_kraken
     hisat_indices = None
     k_input = "staging/se_reads/{sample}.fastq.gz"
     msg = 'No host selected. SKIPPING Hisat2 to remove host dna and fastqc on host removed reads'
