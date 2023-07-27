@@ -3,6 +3,7 @@ import csv
 import glob 
 import json 
 import os
+import re
 import sys
 import shutil
 import subprocess
@@ -128,6 +129,10 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
             read2_filename = ws_paired_reads[i]['read2'].split('/')[-1]
             read2_filepath = check_input_fastqs(input_dir, read2_filename, files_to_zip)
             sample_id = ws_paired_reads[i]['sample_id'].split('/')[-1]
+            # Define a regular expression pattern to match all special characters except underscore
+            pattern = r'[^a-zA-Z0-9_]'
+            # Use the re.sub() function to replace all matches of the pattern with an empty string
+            sample_id = re.sub(pattern, '', sample_id)
             pe_r1_samplename = f"{sample_id}_R1.fastq.gz"
             pe_r2_samplename = f"{sample_id}_R2.fastq.gz"
 
@@ -151,12 +156,13 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
             se_filename = ws_single_end_reads[i]['read'].split('/')[-1]
             se_filepath = check_input_fastqs(input_dir, se_filename, files_to_zip)
             sample_id = ws_single_end_reads[i]['sample_id']
+            # Define a regular expression pattern to match all special characters except underscore
+            pattern = r'[^a-zA-Z0-9_]'
+            # Use the re.sub() function to replace all matches of the pattern with an empty string
+            sample_id = re.sub(pattern, '', sample_id)
             se_samplename = f"{sample_id}.fastq.gz"
             single_end_sample_dict[se_filename] = se_samplename
-
             to_copy.append([se_filepath, f"{input_dir}/se_reads/{se_samplename}"])
-
-
     #
     # in parallel, gzip anything that needs to be gzipped
     # We deferred the copy until after the zip
