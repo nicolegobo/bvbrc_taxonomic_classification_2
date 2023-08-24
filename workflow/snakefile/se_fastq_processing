@@ -1,7 +1,7 @@
 import sys
 #### running from service-script ####
 samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
-msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING'
+msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING WGS \n'
 sys.stderr.write(msg)
 configfile: "config.json"
 database_path = config["params"]["database"]
@@ -56,7 +56,7 @@ host_dict = {"homo_sapiens": "GCF_000001405.39_GRCh38.p13_genomic",
 if host_genome == "no_host":
     hisat_indices = None
     k_input = "staging/se_reads/{sample}.fastq.gz"
-    msg = 'No host selected. SKIPPING Hisat2 to remove host dna and fastqc on host removed reads'
+    msg = 'No host selected. SKIPPING Hisat2 to remove host dna and fastqc on host removed reads \n'
 else:
     # append to rule all list 
     rule_all_list.append(expand('output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz', sample=samples)),
@@ -66,13 +66,14 @@ else:
     # select the correct indicies
     hisat_indices = host_dict[host_genome]
     k_input = "output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz"
-    msg = f'Host genome {host_genome} selected. ADDING Hisat2 to remove host dna and fastqc on host removed reads'
+    msg = f'Host genome {host_genome} selected. ADDING Hisat2 to remove host dna and fastqc on host removed reads \n'
 
 sys.stderr.write(msg)
 
 rule all:
     input:
         rule_all_list
+
 rule fastqc_raw_reads:
     input:
         raw_read = 'staging/se_reads/{sample}.fastq.gz',

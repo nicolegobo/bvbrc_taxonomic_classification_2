@@ -3,7 +3,7 @@ import sys
 samples = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").sample
 read_nums = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").read_num
 
-msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING \n'
+msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING WGS \n'
 sys.stderr.write(msg)
 configfile: "config.json"
 database_path = config["params"]["database"]
@@ -208,6 +208,7 @@ rule classify_with_kraken:
             --paired {input.kraken2_input_r1} {input.kraken2_input_r2} \
             --output {output.k2_output}
         '''
+
 rule zip_n_move_classified_reads:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
