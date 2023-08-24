@@ -12,8 +12,19 @@ xargs<- parser$parse_args()
 input_report <- xargs$input
 
 # get from sample name from path
-file_name <- sub(".*/bracken_output/", "", input_report)
-sample_name <- sub("*_bracken_report.txt", "", file_name)
+# from microbiome pipeline
+if (grepl("bracken_output", input_report)) {
+  file_name <- sub(".*/bracken_output/", "", input_report)
+  sample_name <- sub("*_bracken_report.txt", "", file_name)
+  } else if (grepl("kraken_output", input_report)) {
+    file_name <- sub(".*/kraken_output/", "", input_report)
+    sample_name <- sub("*_k2_report.txt", "", file_name)
+  } else {
+    file_name <- input_report
+    sample_name <- sub("*_report.txt", "", file_name)
+  }
+
+
 
 ### defines the build_sankey_networkfunction from Pavian ###
 ### this is where the analysis begins
