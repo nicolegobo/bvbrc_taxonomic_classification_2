@@ -1,9 +1,11 @@
 title: Taxonomic Classification Service - BVBRC
-subtitle: Metagenomics is the study of genomic sequences obtained directly from an environment. For many metagenomic samples, the species, genera and even phyla present in the sample are largely unknown at the time of sequencing, and the goal of sequencing is to determine the microbial composition as precisely as possible. The BV-BRC Taxonomic Classification service can be used to identify the microbial composition of metagenomic samples.
+subtitle: "Metagenomics is the study of genomic sequences obtained directly from an environment. For many metagenomic samples, the species, genera and even phyla present in the sample are largely unknown at the time of sequencing, and the goal of sequencing is to determine the microbial composition as precisely as possible. The BV-BRC Taxonomic Classification service can be used to identify the microbial composition of metagenomic samples. \n Cite the BV-BRC: 10.1093/nar/gkac1003"
 intro_text: MultiQC reports summarise analysis results.
+report: 
+    doi: "10.1093/nar/gkac1003"
 show_analysis_paths: False
 show_analysis_time: False
-custom_logo: ../workflow/bv-brc-header-logo-bg.png
+custom_logo: bv-brc-header-logo-bg.png
 custom_logo_url: https://www.bv-brc.org/
 custom_logo_title: Bacterial and Viral Bioinformatics Resource Center
 module_order:

@@ -66,7 +66,7 @@ def load_hisat_indicies(input_dict):
     return
 
 # run the snakefile command
-def run_snakefile(input_dict, config):
+def run_snakefile(input_dict, input_dir, output_dir,  config):
     # if there are paired end reads process them
     input_dir = config['input_data_dir']
     SNAKEMAKE_PATH = config['snakemake']
@@ -79,6 +79,7 @@ def run_snakefile(input_dict, config):
         "--use-singularity",
         "--verbose",
         "--printshellcmds",
+        "--keep-going"
         ]
 
     if config['cores'] == 1:
@@ -90,22 +91,69 @@ def run_snakefile(input_dict, config):
         subprocess.run(cmd)
 
     # if there are single end reads process them
-    if os.path.exists('staging/se_reads'):
+    if os.path.exists(f"{input_dir}/se_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'se_fastq_processing')
         cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
 
-    # paired and single end reads will be processed together
-    if input_dict["analysis_type"] == "pathogen":
-        SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'pathogen_analysis')
-        cmd = common_params + ["--snakefile",  SNAKEFILE]
-        subprocess.run(cmd)
+#file check
+    dict_samples = {}
+    complete = []
+    incomplete = []
+    paired_reads = glob.glob(f"{input_dir}/pe_reads/*_R1.fastq.gz")
+    for read in paired_reads:
+        basename = os.path.basename(read)
+        sample_name = basename.split("_R1")[0]
+        dict_samples[sample_name] = True
+    single_reads = glob.glob(f"{input_dir}/se_reads/*.fastq.gz")
+    for read in single_reads:
+        basename = os.path.basename(read)
+        sample_name = basename.split(".")[0]
+        dict_samples[sample_name] = True
+    for sample_name in dict_samples:
+        report_path = f"{output_dir}/{sample_name}/kraken_output/{sample_name}_k2_output.txt"
+        if os.path.isfile(report_path) == True:
+            complete.append(sample_name)
+        else:
+            dict_samples[sample_name] = False
+            incomplete.append(sample_name)
+    if len(incomplete) != 0:
+        # I want this message to go to the error report
+        error_message = f"Ending job. Not proceeding with the rest of the analysis due to errors in FASTQ proccessing \n \
+                FASTQ Processing is complete for the following samples: {complete}. \n \
+                FASTQ Processing is INCOMPLETE for the following samples: **{incomplete}**"
+        raise FileNotFoundError(error_message)
+    else:
+        # if all of the kraken report files exist then the final step will trigger.
+        # paired and single end reads will be processed together
+        if input_dict["analysis_type"] == "pathogen":
+            SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'pathogen_analysis')
+            cmd = common_params + ["--snakefile",  SNAKEFILE]
+            subprocess.run(cmd)
 
-    if input_dict["analysis_type"] == 'microbiome':
-        SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'microbiome_analysis')
-        cmd = common_params + ["--snakefile",  SNAKEFILE]
-        subprocess.run(cmd)
-    return
+        if input_dict["analysis_type"] == 'microbiome':
+            SNAKEFILE = os.path.join(SNAKEFILE_DIR, 'microbiome_analysis')
+            cmd = common_params + ["--snakefile",  SNAKEFILE]
+            subprocess.run(cmd)
+        # file check
+        complete = []
+        incomplete = []
+        for sample_name in dict_samples:
+            # check for problematic Kraken results 
+            krona_path = f"{output_dir}/{sample_name}/{sample_name}_krona.html"
+            if os.path.isfile(krona_path) == True:
+                msg = f"{sample_name}"
+                complete.append(msg)
+            else:
+                dict_samples[sample_name] = False
+                msg = f"{sample_name}"
+                incomplete.append(msg)
+        ############ write to error report ############
+        if len(incomplete) != 0:
+            # I want this message to go to the error report
+            error_message = f"Reliable kraken results produced for the following samples: {complete}. \n \
+                    Review the following samples: **{incomplete}**"
+            raise FileNotFoundError(error_message)
 
 
 def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
@@ -113,6 +161,8 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
     #### paired reads ####
     files_to_zip = []
     to_copy = []
+    #sample_ids = []
+
     if len(input_dict['paired_end_libs']) != 0:
         paired_sample_dict = {}
         ws_paired_reads = []
@@ -135,13 +185,14 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
             sample_id = re.sub(pattern, '', sample_id)
             pe_r1_samplename = f"{sample_id}_R1.fastq.gz"
             pe_r2_samplename = f"{sample_id}_R2.fastq.gz"
+            #sample_ids.append(sample_id)
 
             paired_sample_dict[read1_filename] = pe_r1_samplename
             paired_sample_dict[read2_filename] = pe_r2_samplename
 
             to_copy.append([read1_filepath, f"{input_dir}/pe_reads/{pe_r1_samplename}"])
             to_copy.append([read2_filepath, f"{input_dir}/pe_reads/{pe_r2_samplename}"])
-
+            
     
     #### single reads ####
     if len(input_dict['single_end_libs']) != 0:
@@ -156,6 +207,8 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
             se_filename = ws_single_end_reads[i]['read'].split('/')[-1]
             se_filepath = check_input_fastqs(input_dir, se_filename, files_to_zip)
             sample_id = ws_single_end_reads[i]['sample_id']
+            #sample_ids.append(sample_id)
+
             # Define a regular expression pattern to match all special characters except underscore
             pattern = r'[^a-zA-Z0-9_]'
             # Use the re.sub() function to replace all matches of the pattern with an empty string
@@ -163,6 +216,7 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
             se_samplename = f"{sample_id}.fastq.gz"
             single_end_sample_dict[se_filename] = se_samplename
             to_copy.append([se_filepath, f"{input_dir}/se_reads/{se_samplename}"])
+
     #
     # in parallel, gzip anything that needs to be gzipped
     # We deferred the copy until after the zip
@@ -183,7 +237,8 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
         if len(input_dict['single_end_libs']) != 0:
             for key, value in single_end_sample_dict.items():
                 writer.writerow([key, value])
-    return 
+    return
+    #return sample_ids
 
 
 # run the script from service-script/app_taxonomic_classification perl script
@@ -211,7 +266,7 @@ def main(argv):
         load_hisat_indicies(input_dict)
     except:
         pass
-    run_snakefile(input_dict, config)
+    run_snakefile(input_dict, input_dir, output_dir,  config)
 
 
 if __name__ == "__main__":
