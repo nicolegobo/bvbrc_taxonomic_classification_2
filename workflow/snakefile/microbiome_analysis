@@ -4,7 +4,6 @@ import sys
 pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
 se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 samples = pe_samples+se_samples
-print(samples)
 
 msg = 'snakefile command recieved - MICROBOIME ANALYSIS. \n'
 sys.stderr.write(msg)
