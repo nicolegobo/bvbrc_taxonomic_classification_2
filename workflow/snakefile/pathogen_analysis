@@ -8,7 +8,6 @@ sys.stderr.write(msg)
 configfile: "config.json"
 workflow_dir = config["workflow_dir"]
 
-
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         expand('output/{sample}_sankey.html', sample=samples),
@@ -77,7 +76,6 @@ rule generate_sankey_plots:
 
         mv {params.tmp_sankey_dir} {output.cl_sankey_dir}
         '''
-
 
 rule multisample_comp_table:
     input:
