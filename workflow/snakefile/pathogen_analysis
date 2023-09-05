@@ -8,8 +8,7 @@ sys.stderr.write(msg)
 configfile: "config.json"
 workflow_dir = config["workflow_dir"]
 
-## holding for testing
-#         expand('clean_up/cl_{sample}/{sample}_sankey_files', sample=samples),
+
 rule_all_list = [
         expand('output/{sample}/{sample}_krona.html', sample=samples),
         expand('output/{sample}_sankey.html', sample=samples),
@@ -79,17 +78,6 @@ rule generate_sankey_plots:
         mv {params.tmp_sankey_dir} {output.cl_sankey_dir}
         '''
 
-# rule clean_up_sankey_html_files:
-#     input:
-#         sankey_plot = 'output/{sample}_sankey.html',
-#         sankey_dir = 'output/{sample}_sankey_files/',
-#     output:
-#         cl_sankey_dir = directory('clean_up/cl_{sample}/{sample}_sankey_files'),
-#     shell:
-#         '''
-#         mkdir -p {output.cl_sankey_dir}
-#         mv {input.sankey_dir} {output.cl_sankey_dir}
-#         '''
 
 rule multisample_comp_table:
     input:
