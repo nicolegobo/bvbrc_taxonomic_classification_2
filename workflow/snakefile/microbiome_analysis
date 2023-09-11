@@ -61,7 +61,7 @@ rule bracken_abundance_estimation:
             -i {input.k2report} \
             -k {params.kmer_distr} \
             -o {output.bracken_output} \
-            -l S \
+            -l {params.level_of_abundance_estimation} \
             --out-report {output.bracken_report} \
             -t 10
         '''
