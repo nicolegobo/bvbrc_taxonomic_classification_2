@@ -1,0 +1,236 @@
+##### Add the stacked bar plot 
+
+# The SILVA taxonomy is built with a semi-automatic data curation procedure to provide every sequence entry with a taxonomic classification down to genus level.
+# The Greengenes taxonomy ca go to the species level
+import os
+import sys
+
+#### relative path from service-script ####
+pe_samples = glob_wildcards('staging/pe_reads/{sample}_{read_num}.fastq.gz').sample
+se_samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
+samples = pe_samples+se_samples
+
+msg = 'snakefile command recieved - MICROBOIME ANALYSIS.\n'
+sys.stderr.write(msg)
+configfile: "config.json"
+workflow_dir = config["workflow_dir"]
+database_path = config["params"]["database"]
+workflow_dir = config["workflow_dir"]
+
+#### TEMP #### 
+database_path = '/vol/patric3/metagenome_dbs/tests/database/SILVA/'
+
+rule_all_list = [
+    expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample = samples),
+    expand('output/{sample}/{sample}_alpha_diversity.csv', sample = samples),
+    expand('output/{sample}/{sample}_krona.html', sample = samples),
+    expand('output/{sample}_sankey.html', sample = samples),
+    expand('clean_up/{sample}_sankey_files', sample = samples),
+    'output/alpha_diversity.csv',
+    'output/multiqc_report.html',
+    'clean_up/multiqc_data',
+    ]
+
+## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
+## multisample comparison and visualizations will either fail or be redundant if only one sample present
+if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > generate_sample_krona_plots > generate_sankey_plots > multiqc 
+    msg = "preforming analysis for only one sample - DOES NOT INCLUDE multisample_comparison.html, multisample_krona.html \n"
+    sys.stderr.write(msg)
+else:
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > multisample_comp_table > clean_up_multisample_html_files > multiqc
+    msg = "preforming analysis for multiple samples - INCLUDES multisample_comparison.html, multisample_krona.html \n"
+    sys.stderr.write(msg)
+    rule_all_list.append('output/multisample_comparison.html')
+    rule_all_list.append('clean_up/multisample_comparison_files')
+    rule_all_list.append('output/multisample_krona.html')
+    rule_all_list.append('output/beta_diversity.csv')
+
+
+rule all:
+    input:
+        rule_all_list
+rule bracken_abundance_estimation:
+    input:
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+    params:
+        kmer_distr = os.path.join(database_path, "database100mers.kmer_distrib"),
+        bracken_dir = 'output/{sample}/bracken_output',
+        ave_read_length = '100',
+        level_of_abundance_estimation = 'G',
+        read_threshold = '10'
+    output:
+        bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
+    shell:
+        '''
+        mkdir -p {params.bracken_dir}
+
+        est_abundance.py \
+            -i {input.k2report} \
+            -k {params.kmer_distr} \
+            -o {output.bracken_output} \
+            -l {params.level_of_abundance_estimation} \
+            --out-report {output.bracken_report} \
+            -t 10
+        '''
+
+rule calculate_alpha_diversity:
+    input:
+        bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
+    params:
+        temp_alpha_diversity_csv = '{sample}_alpha_diversity_tmp.csv',
+        alpha_stats_cleanup_script = os.path.join(workflow_dir, 'scripts/alpha_stats_cleanup.py')
+    output:
+        alpha_diversity_csv = 'output/{sample}/{sample}_alpha_diversity.csv',
+        alpha_diversity_html = 'output/{sample}/{sample}_alpha_diversity.html'
+    shell:
+        '''
+        echo Alpha Diversity Tests: {wildcards.sample} >> {params.temp_alpha_diversity_csv}
+
+        alpha_diversity.py  \
+            -f {input.bracken_output} -a Sh >> {params.temp_alpha_diversity_csv}
+        
+        alpha_diversity.py \
+            -f {input.bracken_output} -a Si >> {params.temp_alpha_diversity_csv}
+
+        alpha_diversity.py \
+            -f {input.bracken_output} -a ISi >> {params.temp_alpha_diversity_csv}
+
+        alpha_diversity.py \
+            -f {input.bracken_output} -a BP >> {params.temp_alpha_diversity_csv}
+
+        alpha_diversity.py \
+            -f {input.bracken_output} -a F >> {params.temp_alpha_diversity_csv}
+
+        echo          >> {params.temp_alpha_diversity_csv}
+
+        python3 {params.alpha_stats_cleanup_script} {params.temp_alpha_diversity_csv} {output.alpha_diversity_csv} {output.alpha_diversity_html}
+        '''
+
+rule merge_alpha_diversity_stats:
+    input:
+        #using set so each sample appears only once
+        alpha_diversity_csv = set(expand('output/{sample}/{sample}_alpha_diversity.csv', sample = samples))
+    params:
+        alpha_stats_viz = os.path.join(workflow_dir, 'scripts/alpha_stats_visualization.py')
+    output:
+        alpha_diversity_csv = 'output/alpha_diversity.csv',
+        alpha_diversity_html = 'output/alpha_diversity.html'
+    shell:
+        '''
+        python3 {params.alpha_stats_viz} {input.alpha_diversity_csv} {output.alpha_diversity_csv} {output.alpha_diversity_html}
+        '''
+
+rule calculate_beta_diversity:
+    input:
+        # using set so each sample appears only once 
+        bracken_outputs = set(expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample = samples))
+    params:
+        temp_beta_diversity_csv = 'beta_diversity_tmp.csv',
+        beta_stats_cleanup_script = os.path.join(workflow_dir, 'scripts/beta_stats_cleanup.py'),
+        level_of_abundance_estimation = 'G'
+    output:
+        beta_diversity_csv = 'output/beta_diversity.csv',
+        beta_diversity_html= 'output/beta_stats_heatmap.html'
+    shell:
+        '''
+        beta_diversity.py \
+        --input {input.bracken_outputs} \
+        --type bracken \
+        --level {params.level_of_abundance_estimation} \
+        > {params.temp_beta_diversity_csv}
+        
+        python3 {params.beta_stats_cleanup_script} {params.temp_beta_diversity_csv} {output.beta_diversity_csv} {output.beta_diversity_html}
+        '''
+
+rule generate_sample_krona_plots:
+    input:
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
+    output:
+        krona_html = 'output/{sample}/{sample}_krona.html'
+    shell:
+        '''
+        ktImportTaxonomy -t 5 -m 3 \
+            {input.bracken_report} \
+            -o {output.krona_html}
+        '''
+rule generate_multisample_krona_plots:
+    input:
+        bracken_reports = set(expand('output/{sample}/bracken_output/{sample}_bracken_report.txt', sample = samples))
+    output:
+        set_krona_plot = 'output/multisample_krona.html'
+    shell:
+        '''
+        ktImportTaxonomy -t 5 -m 3 \
+            {input.bracken_reports} \
+            -o {output.set_krona_plot}
+        '''
+
+rule generate_sankey_plots:
+    input:
+        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
+    params:
+        sankey_script = os.path.join(workflow_dir, "scripts/sankey_plot_gen.R"),
+        tmp_sankey_dir = directory('output/{sample}_sankey_files/')
+    output:
+        sankey_plot = 'output/{sample}_sankey.html',
+        cl_sankey_dir = directory('clean_up/{sample}_sankey_files')
+    shell: 
+        '''
+        {params.sankey_script} --input {input.bracken_report} --output {output.sankey_plot}
+        
+        mkdir -p clean_up
+        
+        mv {params.tmp_sankey_dir} {output.cl_sankey_dir}
+        '''
+
+rule multisample_comp_table:
+    input:
+        kraken2_report = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample = samples)),
+    params:
+        multisample_comparsion_script = os.path.join(workflow_dir, "scripts/pavian_multisample_comparsion.R"),
+        output_dir = directory('output/'),
+    output:
+        multi_comp = 'output/multisample_comparison.html',
+        multisample_comp_dir = directory('output/multisample_comparison_files'),
+    shell:
+        r'''
+        {params.multisample_comparsion_script} --input "{input.kraken2_report}" --output_dir {params.output_dir}
+        '''
+
+rule clean_up_multisample_html_files:
+    input:
+        multi_comp_table = 'output/multisample_comparison.html',
+        multisample_comp_dir = 'output/multisample_comparison_files'
+    output:
+        cl_multisample_comp_dir = directory('clean_up/multisample_comparison_files')
+    shell:
+        '''
+        mkdir -p {output.cl_multisample_comp_dir}
+        mv {input.multisample_comp_dir} {output.cl_multisample_comp_dir}
+        '''
+
+rule multiqc:
+    input:
+        multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
+    params:
+        landing_dir = 'output',
+        tmp_multiqc_dir = directory('output/multiqc_data')
+    output:
+        'output/multiqc_report.html',
+        cl_multiqc_dir = directory('clean_up/multiqc_data')
+    shell:
+        '''
+        multiqc --version
+
+        multiqc output/. \
+            -c {input.multiqc_config} \
+            -o {params.landing_dir} --fullnames \
+            -f \
+            --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
+        
+        mkdir -p {output.cl_multiqc_dir}
+
+        mv {params.tmp_multiqc_dir} {output.cl_multiqc_dir}
+        '''

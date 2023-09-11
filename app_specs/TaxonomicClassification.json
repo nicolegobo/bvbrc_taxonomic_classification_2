@@ -35,7 +35,8 @@
     "type": "enum",
     "enum": [
     "pathogen",
-    "microbiome"
+    "microbiome",
+    "16s"
     ]
   },
   {
@@ -127,7 +128,9 @@
     "default": "bvbrc",
     "enum": [
   "bvbrc",
-  "standard",
+  "Greengenes",
+  "SILVA",
+  "standard"
     ],
     "desc": "Target database",
     "required": 1
