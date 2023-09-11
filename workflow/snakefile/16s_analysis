@@ -1,7 +1,3 @@
-##### Add the stacked bar plot 
-
-# The SILVA taxonomy is built with a semi-automatic data curation procedure to provide every sequence entry with a taxonomic classification down to genus level.
-# The Greengenes taxonomy ca go to the species level
 import os
 import sys
 
@@ -16,9 +12,6 @@ configfile: "config.json"
 workflow_dir = config["workflow_dir"]
 database_path = config["params"]["database"]
 workflow_dir = config["workflow_dir"]
-
-#### TEMP #### 
-database_path = '/vol/patric3/metagenome_dbs/tests/database/SILVA/'
 
 rule_all_list = [
     expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample = samples),
