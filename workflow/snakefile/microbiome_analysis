@@ -14,7 +14,7 @@ database_path = config["params"]["database"]
 rule_all_list = [
         expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample = samples),
         expand('output/{sample}/{sample}_alpha_diversity.csv', sample = samples),
-        expand('output/{sample}/{sample}_krona.html', sample = samples),
+        expand('output/{sample}_krona.html', sample = samples),
         expand('output/{sample}_sankey.html', sample = samples),
         expand('clean_up/{sample}_sankey_files', sample = samples),
         'output/alpha_diversity.csv',
@@ -138,7 +138,7 @@ rule generate_sample_krona_plots:
     input:
         bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     output:
-        krona_html = 'output/{sample}/{sample}_krona.html'
+        krona_html = 'output/{sample}_krona.html'
     shell:
         '''
         ktImportTaxonomy -t 5 -m 3 \

@@ -9,7 +9,7 @@ configfile: "config.json"
 workflow_dir = config["workflow_dir"]
 
 rule_all_list = [
-        expand('output/{sample}/{sample}_krona.html', sample=samples),
+        expand('output/{sample}_krona.html', sample=samples),
         expand('output/{sample}_sankey.html', sample=samples),
         expand('clean_up/{sample}_sankey_files', sample=samples),
         expand('output/multiqc_report.html',sample=samples),
@@ -39,7 +39,7 @@ rule generate_sample_krona_plots:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
     output:
-        krona_html = 'output/{sample}/{sample}_krona.html'
+        krona_html = 'output/{sample}_krona.html'
     shell:
         '''
         ktImportTaxonomy -t 7 -m 3 \
