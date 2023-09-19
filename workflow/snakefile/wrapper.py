@@ -172,7 +172,7 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
 
 # run the snakefile command for WGS
 def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
-    # if there are paired end reads process them
+    # process any paired reads
     input_dir = config["input_data_dir"]
     SNAKEMAKE_PATH = config["snakemake"]
     ### relative path running from service-script ###
@@ -195,7 +195,7 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
         cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
 
-    # if there are single end reads process them
+    # process any single reads
     if os.path.exists(f"{input_dir}/se_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "se_fastq_processing")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
