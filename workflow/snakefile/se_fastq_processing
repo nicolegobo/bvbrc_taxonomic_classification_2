@@ -16,6 +16,7 @@ rule_all_list = [
         expand('output/{sample}/kraken_output/{sample}_k2_output.txt', sample=samples),
         ]
 
+# update rule all according to saving the classified and unclassified sequences in the Kraken2 command
 if save_classified == True:
     cf = "--classified-out"
     co = "{sample}_classified_reads.fastq"
@@ -52,13 +53,15 @@ host_dict = {"homo_sapiens": "GCF_000001405.39_GRCh38.p13_genomic",
     "mustela_putorius_furo" : "GCF_000215625.1_MusPutFur1.0_genomic",
     "sus_scrofa" : "GCF_000003025.6_Sscrofa11.1_genomic"}
 
-# setting rules according to host 
+# setting rules according to host
 if host_genome == "no_host":
     hisat_indices = None
+    # set kraken input to trimmed reads as default
     k_input = "staging/se_reads/{sample}.fastq.gz"
     msg = 'No host selected. SKIPPING Hisat2 to remove host dna and fastqc on host removed reads \n'
 else:
-    # append to rule all list 
+    # append to rule all list
+    # update kraken input to include host removed reads 
     rule_all_list.append(expand('output/{sample}/hisat2_results/{sample}_host_removed.fastq.gz', sample=samples)),
     rule_all_list.append(expand('output/{sample}/fastqc_results/host_removed_reads/{sample}_host_removed_fastqc.html', sample=samples)),
     # update rule order
@@ -122,7 +125,7 @@ rule hisat2_remove_host_dna:
             -U {input.raw_read} \
             --un-gz \
             {params.tmp_name} -S {output.sam} \
-            --threads {threads} \
+            --threads {threads}
 
         mv {params.tmp_name} {output.out}
         '''
