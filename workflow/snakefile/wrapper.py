@@ -71,7 +71,7 @@ def post_processing_check(dict_samples, output_dir):
     incomplete = []
     for sample_name in dict_samples:
         # check for problematic Kraken results
-        krona_path = f"{output_dir}/{sample_name}/{sample_name}_krona.html"
+        krona_path = f"{output_dir}/{sample_name}_krona.html"
         if os.path.isfile(krona_path) == True:
             msg = f"{sample_name}"
             complete.append(msg)
@@ -158,7 +158,7 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
     if  kraken_check == True:
         # if all of the kraken report files exist then the final step will trigger.
         # paired and single end reads will be processed together
-        if input_dict["analysis_type"] == "16s":
+        if input_dict["analysis_type"] == "16S":
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "16s_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
             subprocess.run(cmd)
@@ -334,7 +334,7 @@ def main(argv):
         pass
     if input_dict["analysis_type"] == "pathogen" or input_dict["analysis_type"] == "microbiome":
         run_wgs_snakefile(input_dict, input_dir, output_dir,  config)
-    if input_dict["analysis_type"] == "16s":
+    if input_dict["analysis_type"] == "16S":
         run_16s_snakefile(input_dict, input_dir, output_dir,  config)
     else:
         msg = f"unsupoorted analysis type {input_dict['analysis_type']} \n"

@@ -125,7 +125,7 @@ rule hisat2_remove_host_dna:
             -U {input.raw_read} \
             --un-gz \
             {params.tmp_name} -S {output.sam} \
-            --threads {threads} \
+            --threads {threads}
 
         mv {params.tmp_name} {output.out}
         '''

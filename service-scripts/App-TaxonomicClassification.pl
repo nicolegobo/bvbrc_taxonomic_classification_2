@@ -28,6 +28,8 @@ sub run_classification
     
     my %db_map = (
 		  bvbrc => 'bvbrc',
+          Greengenes => 'Greengenes',
+          SILVA => 'SILVA',
 		  standard => 'standard');
     my $db_dir = $db_map{$params->{database}};
     if (!$db_dir)
@@ -125,7 +127,6 @@ sub process_read_input
     #
 
     $params->{database} = metagenome_dbs . "/kraken2";
-
     write_file("$top/config.json", JSON::XS->new->pretty->canonical->encode(\%config_vars));
 
     my @cmd = ("python3", "$wf_dir/snakefile/wrapper.py", "$top/config.json");
