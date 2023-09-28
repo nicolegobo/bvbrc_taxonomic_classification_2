@@ -48,7 +48,7 @@ rule bracken_abundance_estimation:
         kmer_distr = os.path.join(database_path, "database100mers.kmer_distrib"),
         bracken_dir = 'output/{sample}/bracken_output',
         ave_read_length = '100',
-        level_of_abundance_estimation = 's',
+        level_of_abundance_estimation = 'S',
         read_threshold = '10'
     output:
         bracken_output = 'output/{sample}/bracken_output/{sample}_bracken_output.txt',
