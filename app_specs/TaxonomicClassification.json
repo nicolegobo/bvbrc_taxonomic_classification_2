@@ -30,7 +30,7 @@
     "id": "analysis_type",
     "desc": "Workflow type (pathogen / microbiome)",
     "required": 1,
-    "default": "microbiome",
+    "default": "16S",
     "label": "Analysis Type",
     "type": "enum",
     "enum": [
@@ -125,7 +125,7 @@
     "id": "database",
     "type": "enum",
     "label": "Database",
-    "default": "bvbrc",
+    "default": "SILVA",
     "enum": [
   "bvbrc",
   "Greengenes",
