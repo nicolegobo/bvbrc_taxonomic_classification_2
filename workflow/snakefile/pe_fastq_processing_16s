@@ -1,0 +1,192 @@
+import sys
+#### running from service-script ####
+samples = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").sample
+read_nums = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").read_num
+msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING 16s \n'
+sys.stderr.write(msg)
+
+configfile: "config.json"
+database_path = config["params"]["database"]
+save_classified = config["params"]["save_classified_sequences"]
+save_unclassified = config["params"]["save_unclassified_sequences"]
+confidence_interval = config["params"]["confidence_interval"]
+ruleorder: fastqc_raw_reads > trim_adapters > fastqc_on_trimmed_reads > classify_with_kraken
+save_classified = False
+save_unclassified = False
+
+rule_all_list = [
+    expand('output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.html', sample=samples, read_num=read_nums),
+    expand('output/{sample}/trimmed_reads/{sample}_R{read_num}_trimmed.fastq.gz', sample=samples, read_num=read_nums),
+    expand('output/{sample}/fastqc_results/trimmed_reads/{sample}_R{read_num}_trimmed_fastqc.html', sample=samples, read_num=read_nums),
+    expand('output/{sample}/kraken_output/{sample}_k2_output.txt', sample=samples, read_num=read_nums)
+]
+
+# update rule all according to saving the classified and unclassified sequences in the Kraken2 command
+if save_classified == True:
+    cf = "--classified-out"
+    co = "{sample}_classified_reads#.fastq"
+    co_1 = "{sample}_classified_reads_1.fastq"
+    co_2 = "{sample}_classified_reads_2.fastq"
+    co_r1 = "output/{sample}/kraken_output/{sample}_classified_reads_R1.fastq.gz"
+    co_r2 = "output/{sample}/kraken_output/{sample}_classified_reads_R2.fastq.gz"
+    rule_all_list.append(expand("output/{sample}/kraken_output/{sample}_classified_reads_R{read_num}.fastq.gz", sample=samples, read_num=read_nums))
+    msg = "Adding save classified sequences to kraken2 command. \n"
+    sys.stderr.write(msg)
+else:
+    cf = ""
+    co = ""
+    co_1 = ""
+    co_2 = " "
+    co_r1 = ""
+    co_r2 = " "
+
+if save_unclassified == True:
+    ucf = "--unclassified-out"
+    uco = "{sample}_unclassified_reads#.fastq"
+    uco_1 = "{sample}_unclassified_reads_1.fastq"
+    uco_2 = "{sample}_unclassified_reads_2.fastq"
+    uco_r1 = "output/{sample}/kraken_output/{sample}_unclassified_reads_R1.fastq.gz"
+    uco_r2 = "output/{sample}/kraken_output/{sample}_unclassified_reads_R2.fastq.gz"
+    rule_all_list.append(expand("output/{sample}/kraken_output/{sample}_unclassified_reads_R{read_num}.fastq.gz", sample=samples, read_num=read_nums))
+    msg = "Adding save unclassified sequences to kraken2 command. \n"
+    sys.stderr.write(msg)
+else:
+    ucf = ""
+    uc = ""
+    uco = ""
+    uco_1 = ""
+    uco_2 = ""
+    uco_r1 = ""
+    uco_r2 = " "
+
+
+rule all:
+    input:
+        rule_all_list
+
+rule fastqc_raw_reads:
+    input:
+        raw_read = 'staging/pe_reads/{sample}_R{read_num}.fastq.gz',
+    params:
+        fastqc_dir = 'output/{sample}/fastqc_results/raw_reads',
+    output:
+        fastqc_html = 'output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.html',
+        fastqc_zip = 'output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.zip'
+    threads: 4
+    shell:
+        '''
+        mkdir -p {params.fastqc_dir}
+
+        fastqc --version
+        
+        fastqc {input.raw_read} \
+        -t {threads} \
+        -o {params.fastqc_dir} -q
+
+        mv {params.fastqc_dir}/{wildcards.sample}_R{wildcards.read_num}_fastqc.html {output.fastqc_html}
+        mv {params.fastqc_dir}/{wildcards.sample}_R{wildcards.read_num}_fastqc.zip {output.fastqc_zip}
+        '''
+
+rule trim_adapters:
+    input:
+        r1 ='staging/pe_reads/{sample}_R1.fastq.gz',
+        r2 = 'staging/pe_reads/{sample}_R2.fastq.gz'
+    params:
+        out_dir = 'output/{sample}/trimmed_reads/',
+        tmp_r1 = 'output/{sample}/trimmed_reads/{sample}_R1_val_1.fq.gz',
+        tmp_r2 = 'output/{sample}/trimmed_reads/{sample}_R2_val_2.fq.gz',
+    output: 
+        r1 = 'output/{sample}/trimmed_reads/{sample}_R1_trimmed.fastq.gz',
+        r2 = 'output/{sample}/trimmed_reads/{sample}_R2_trimmed.fastq.gz'
+    shell:
+        '''
+            trim_galore --gzip --paired -o {params.out_dir} {input.r1} {input.r2}
+
+            mv {params.tmp_r1} {output.r1}
+            mv {params.tmp_r2} {output.r2}
+        '''
+
+rule fastqc_on_trimmed_reads:
+    input:
+        trimmed_read = 'output/{sample}/trimmed_reads/{sample}_R{read_num}_trimmed.fastq.gz',
+    params:
+        fastqc_dir = 'output/{sample}/fastqc_results/trimmed_reads',
+    output:
+        fastqc_html = 'output/{sample}/fastqc_results/trimmed_reads/{sample}_R{read_num}_trimmed_fastqc.html',
+        fastqc_zip = 'output/{sample}/fastqc_results/trimmed_reads/{sample}_R{read_num}_trimmed_fastqc.zip'
+    threads: 4
+    shell:
+        '''
+        mkdir -p {params.fastqc_dir}
+
+        fastqc --version
+        
+        fastqc {input.trimmed_read} \
+        -t {threads} \
+        -o {params.fastqc_dir} -q
+        '''
+
+rule classify_with_kraken:
+    input:
+        kraken2_input_r1 = 'output/{sample}/trimmed_reads/{sample}_R1_trimmed.fastq.gz',
+        kraken2_input_r2 = 'output/{sample}/trimmed_reads/{sample}_R2_trimmed.fastq.gz'
+    params: 
+        database = database_path,
+        kraken_dir = 'output/{sample}/kraken_output',
+        classified_flag = cf,
+        classified_out = co,
+        unclassified_flag = ucf,
+        unclassified_out = uco,
+        ci = confidence_interval,
+    output:
+        k2_output = 'output/{sample}/kraken_output/{sample}_k2_output.txt',
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt',
+    threads: 16
+    shell:
+        '''
+        mkdir -p {params.kraken_dir}
+
+        kraken2 --db {params.database} \
+            --threads {threads} \
+            --minimum-hit-groups 3 \
+            --report-minimizer-data \
+            --memory-mapping \
+            {params.classified_flag} \
+            {params.classified_out} \
+            {params.unclassified_flag} \
+            {params.unclassified_out} \
+            --report {output.k2report} \
+            --confidence {params.ci} \
+            --paired {input.kraken2_input_r1} {input.kraken2_input_r2} \
+            --output {output.k2_output}
+        '''
+
+rule zip_n_move_classified_reads:
+    input:
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+    params:
+        raw_classified_r1 = co_1,
+        raw_classified_r2 = co_2
+    output:
+        zippped_classified_r1 = co_r1,
+        zippped_classified_r2 = co_r2
+    shell:
+        '''
+        gzip -c {params.raw_classified_r1} > {output.zippped_classified_r1}
+        gzip -c {params.raw_classified_r2} > {output.zippped_classified_r2}
+        '''
+
+rule zip_n_move_unclassified_reads:
+    input:
+        k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
+    params:
+        raw_unclassified_r1 = uco_1,
+        raw_unclassified_r2 = uco_2
+    output:
+        zippped_unclassified_r1 = uco_r1,
+        zippped_unclassified_r2 = uco_r2
+    shell:
+        '''
+        gzip -c {params.raw_unclassified_r1} > {output.zippped_unclassified_r1}
+        gzip -c {params.raw_unclassified_r2} > {output.zippped_unclassified_r2}
+        '''
