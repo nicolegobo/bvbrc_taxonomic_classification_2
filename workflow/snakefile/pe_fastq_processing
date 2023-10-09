@@ -177,8 +177,6 @@ rule classify_with_kraken:
     input:
         kraken2_input_r1 = k_r1,
         kraken2_input_r2 = k_r2
-        # clean_r1 = 'output/{sample}/hisat2_results/{sample}_host_removed_R1.fastq.gz',
-        # clean_r2 = 'output/{sample}/hisat2_results/{sample}_host_removed_R2.fastq.gz'
     params: 
         database = database_path,
         kraken_dir = 'output/{sample}/kraken_output',
