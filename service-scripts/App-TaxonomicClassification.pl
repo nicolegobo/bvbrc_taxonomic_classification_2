@@ -28,8 +28,8 @@ sub run_classification
     
     my %db_map = (
 		  bvbrc => 'bvbrc',
-          Greengenes => 'Greengenes',
-          SILVA => 'SILVA',
+		  Greengenes => 'Greengenes',
+		  SILVA => 'SILVA',
 		  standard => 'standard');
     my $db_dir = $db_map{$params->{database}};
     if (!$db_dir)
