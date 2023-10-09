@@ -2,21 +2,24 @@ import sys
 #### running from service-script ####
 samples = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").sample
 read_nums = glob_wildcards("staging/pe_reads/{sample}_R{read_num}.fastq.gz").read_num
-
-msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING WGS \n'
+msg = 'snakefile command recieved - PAIRED END FASTQ PROCESSING 16s \n'
 sys.stderr.write(msg)
+
 configfile: "config.json"
 database_path = config["params"]["database"]
-host_genome = config["params"]["host_genome"]
 save_classified = config["params"]["save_classified_sequences"]
 save_unclassified = config["params"]["save_unclassified_sequences"]
 confidence_interval = config["params"]["confidence_interval"]
-ruleorder: fastqc_raw_reads > classify_with_kraken
+ruleorder: fastqc_raw_reads > trim_adapters > fastqc_on_trimmed_reads > classify_with_kraken
+save_classified = False
+save_unclassified = False
 
 rule_all_list = [
     expand('output/{sample}/fastqc_results/raw_reads/raw_{sample}_R{read_num}_fastqc.html', sample=samples, read_num=read_nums),
-    expand('output/{sample}/kraken_output/{sample}_k2_output.txt', sample=samples, read_num=read_nums),
-    ]
+    expand('output/{sample}/trimmed_reads/{sample}_R{read_num}_trimmed.fastq.gz', sample=samples, read_num=read_nums),
+    expand('output/{sample}/fastqc_results/trimmed_reads/{sample}_R{read_num}_trimmed_fastqc.html', sample=samples, read_num=read_nums),
+    expand('output/{sample}/kraken_output/{sample}_k2_output.txt', sample=samples, read_num=read_nums)
+]
 
 # update rule all according to saving the classified and unclassified sequences in the Kraken2 command
 if save_classified == True:
@@ -56,37 +59,6 @@ else:
     uco_r1 = ""
     uco_r2 = " "
 
-host_dict = {"homo_sapiens": "GCF_000001405.39_GRCh38.p13_genomic",
-    "mus_musculus": "GCF_000001635.26_GRCm38.p6_genomic",
-    "rattus_norvegicus" : "GCF_000001895.5_Rnor_6.0_genomic",
-    "caenorhabditis_elegans" : "GCF_000002985.6_WBcel235_genomic",
-    "drosophila_melanogaster_strain" : "GCF_000001215.4_Release_6_plus_ISO1_MT_genomic",
-    "danio_rerio_strain_tuebingen": "GCF_000002035.6_GRCz11_genomic",
-    "gallus_gallus" : "GCF_000002315.6_GRCg6a_genomic",
-    "macaca_mulatta" : "GCF_003339765.1_Mmul_10_genomic",
-    "mustela_putorius_furo" : "GCF_000215625.1_MusPutFur1.0_genomic",
-    "sus_scrofa" : "GCF_000003025.6_Sscrofa11.1_genomic"}
-
-# setting rules according to host 
-if host_genome == "no_host":
-    hisat_indices = None
-    msg = 'No host selected. SKIPPING Hisat2 to remove host dna and fastqc on host removed reads.  \n'
-    # set kraken input to raw reads as default
-    k_r1 ='staging/pe_reads/{sample}_R1.fastq.gz'
-    k_r2 = 'staging/pe_reads/{sample}_R2.fastq.gz'
-else:
-    # append to rule all list 
-    rule_all_list.append(expand('output/{sample}/hisat2_results/{sample}_host_removed_R{read_num}.fastq.gz', sample=samples, read_num=read_nums)),
-    rule_all_list.append(expand('output/{sample}/fastqc_results/host_removed_reads/{sample}_host_removed_R{read_num}_fastqc.html', sample=samples, read_num=read_nums)),
-    # update kraken input to include host removed reads 
-    k_r1 = 'output/{sample}/hisat2_results/{sample}_host_removed_R1.fastq.gz'
-    k_r2 = 'output/{sample}/hisat2_results/{sample}_host_removed_R2.fastq.gz'
-    # update rule order
-    ruleorder: fastqc_raw_reads > hisat2_remove_host_dna > fastqc_on_host_removed_reads > classify_with_kraken
-    # select the correct indices
-    hisat_indices = host_dict[host_genome]
-    msg = f'Host genome {host_genome} selected. ADDING Hisat2 to remove host dna and fastqc on host removed reads. \n'
-sys.stderr.write(msg)
 
 rule all:
     input:
@@ -111,56 +83,37 @@ rule fastqc_raw_reads:
         -t {threads} \
         -o {params.fastqc_dir} -q
 
-        echo {params.fastqc_dir}/{wildcards.sample}_{wildcards.read_num}_fastqc.html
-        echo {wildcards.sample}
-        echo {wildcards.read_num}
-
         mv {params.fastqc_dir}/{wildcards.sample}_R{wildcards.read_num}_fastqc.html {output.fastqc_html}
         mv {params.fastqc_dir}/{wildcards.sample}_R{wildcards.read_num}_fastqc.zip {output.fastqc_zip}
         '''
 
-rule hisat2_remove_host_dna:
+rule trim_adapters:
     input:
-        r1 = 'staging/pe_reads/{sample}_R1.fastq.gz',
-        r2 = 'staging/pe_reads/{sample}_R2.fastq.gz',
+        r1 ='staging/pe_reads/{sample}_R1.fastq.gz',
+        r2 = 'staging/pe_reads/{sample}_R2.fastq.gz'
     params:
-        hisat2_dir = 'output/{sample}/hisat2_results',
-        tmp_name = '{sample}_host_removed',
-        fq_r1 = '{sample}_host_removed.1',
-        fq_r2 = '{sample}_host_removed.2',
-        hisat_indices_filename = hisat_indices
-    output:
-        sam = 'output/{sample}/hisat2_results/{sample}_aligned_reads.sam',
-        out_r1 = 'output/{sample}/hisat2_results/{sample}_host_removed_R1.fastq.gz',
-        out_r2 = 'output/{sample}/hisat2_results/{sample}_host_removed_R2.fastq.gz',
-    threads: 16
+        out_dir = 'output/{sample}/trimmed_reads/',
+        tmp_r1 = 'output/{sample}/trimmed_reads/{sample}_R1_val_1.fq.gz',
+        tmp_r2 = 'output/{sample}/trimmed_reads/{sample}_R2_val_2.fq.gz',
+    output: 
+        r1 = 'output/{sample}/trimmed_reads/{sample}_R1_trimmed.fastq.gz',
+        r2 = 'output/{sample}/trimmed_reads/{sample}_R2_trimmed.fastq.gz'
     shell:
         '''
-        mkdir -p {params.hisat2_dir}
+            trim_galore --gzip --paired -o {params.out_dir} {input.r1} {input.r2}
 
-        hisat2 --version
-
-        echo "starting hisat2......"
-
-        hisat2 -x {params.hisat_indices_filename} \
-            -1 {input.r1} \
-            -2 {input.r2} \
-            --un-conc-gz \
-            {params.tmp_name} -S {output.sam} \
-            --threads {threads}
-
-        mv {params.fq_r1} {output.out_r1}
-        mv {params.fq_r2} {output.out_r2}
+            mv {params.tmp_r1} {output.r1}
+            mv {params.tmp_r2} {output.r2}
         '''
 
-rule fastqc_on_host_removed_reads:
+rule fastqc_on_trimmed_reads:
     input:
-        clean_read = 'output/{sample}/hisat2_results/{sample}_host_removed_R{read_num}.fastq.gz',
+        trimmed_read = 'output/{sample}/trimmed_reads/{sample}_R{read_num}_trimmed.fastq.gz',
     params:
-        fastqc_dir = 'output/{sample}/fastqc_results/host_removed_reads'
+        fastqc_dir = 'output/{sample}/fastqc_results/trimmed_reads',
     output:
-        fastqc_html = 'output/{sample}/fastqc_results/host_removed_reads/{sample}_host_removed_R{read_num}_fastqc.html',
-        fastqc_zip = 'output/{sample}/fastqc_results/host_removed_reads/{sample}_host_removed_R{read_num}_fastqc.zip'
+        fastqc_html = 'output/{sample}/fastqc_results/trimmed_reads/{sample}_R{read_num}_trimmed_fastqc.html',
+        fastqc_zip = 'output/{sample}/fastqc_results/trimmed_reads/{sample}_R{read_num}_trimmed_fastqc.zip'
     threads: 4
     shell:
         '''
@@ -168,15 +121,15 @@ rule fastqc_on_host_removed_reads:
 
         fastqc --version
         
-        fastqc {input.clean_read} \
+        fastqc {input.trimmed_read} \
         -t {threads} \
         -o {params.fastqc_dir} -q
         '''
 
 rule classify_with_kraken:
     input:
-        kraken2_input_r1 = k_r1,
-        kraken2_input_r2 = k_r2
+        kraken2_input_r1 = 'output/{sample}/trimmed_reads/{sample}_R1_trimmed.fastq.gz',
+        kraken2_input_r2 = 'output/{sample}/trimmed_reads/{sample}_R2_trimmed.fastq.gz'
     params: 
         database = database_path,
         kraken_dir = 'output/{sample}/kraken_output',
