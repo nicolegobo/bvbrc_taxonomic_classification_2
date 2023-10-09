@@ -1,0 +1,19 @@
+{
+    "paired_sample_id": "",
+    "single_sample_id": "",
+    "srr_sample_id": "SRR26088207",
+    "sequence_type": "sixteenS",
+    "database": "Greengenes",
+    "confidence_interval": "0.1",
+    "save_classified_sequences": "false",
+    "save_unclassified_sequences": "false",
+    "output_path": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service",
+    "output_file": "Greengenes_single",
+    "srr_libs": [
+        {
+            "title": "Bacterial composition and diversity of biological soil crusts",
+            "srr_accession": "SRR26088207",
+            "sample_id": "SRR26088207"
+        }
+    ]
+}

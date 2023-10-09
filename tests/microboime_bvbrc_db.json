@@ -1,0 +1,20 @@
+{
+    "paired_sample_id": "",
+    "single_sample_id": "",
+    "srr_sample_id": "SRR14092310",
+    "sequence_type": "wgs",
+    "analysis_type": "microbiome",
+    "database": "bvbrc",
+    "confidence_interval": "0.1",
+    "save_classified_sequences": "false",
+    "save_unclassified_sequences": "false",
+    "output_path": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service",
+    "output_file": "wgs_microbiome_paired",
+    "srr_libs": [
+        {
+            "title": "The role of Enterococcus in allo-HCT patient outcome",
+            "srr_accession": "SRR14092310",
+            "sample_id": "SRR14092310"
+        }
+    ]
+}
