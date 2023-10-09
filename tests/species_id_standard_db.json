@@ -8,7 +8,7 @@
     "confidence_interval": "0.1",
     "save_classified_sequences": "false",
     "save_unclassified_sequences": "false",
-    "output_path": "/nbowers@bvbrc/home/kicking_the_tires/taxonomic_classification_service",
+    "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/",
     "output_file": "wgs_species_identification_standard_db",
     "srr_libs": [
         {
