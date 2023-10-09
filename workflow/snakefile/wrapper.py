@@ -334,10 +334,10 @@ def main(argv):
         pass
     if input_dict["analysis_type"] == "pathogen" or input_dict["analysis_type"] == "microbiome":
         run_wgs_snakefile(input_dict, input_dir, output_dir,  config)
-    if input_dict["analysis_type"] == "16S":
+    elif input_dict["analysis_type"] == "16S":
         run_16s_snakefile(input_dict, input_dir, output_dir,  config)
     else:
-        msg = f"unsupoorted analysis type {input_dict['analysis_type']} \n"
+        msg = f"unsuported analysis type {input_dict['analysis_type']} \n"
         sys.stderr.write(msg)
         sys.exit(1)
 
