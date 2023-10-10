@@ -126,7 +126,7 @@ sub process_read_input
     # Database selection
     #
 
-    $params->{database} = metagenome_dbs . "/kraken2";
+    $params->{database} = metagenome_dbs . "/$params->{database}";
     write_file("$top/config.json", JSON::XS->new->pretty->canonical->encode(\%config_vars));
 
     my @cmd = ("python3", "$wf_dir/snakefile/wrapper.py", "$top/config.json");
