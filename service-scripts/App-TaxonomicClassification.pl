@@ -27,10 +27,10 @@ sub run_classification
     my($app, $app_def, $raw_params, $params) = @_;
     
     my %db_map = (
-		  bvbrc => 'bvbrc',
+		  bvbrc => 'kraken2_brc',
 		  Greengenes => 'Greengenes',
 		  SILVA => 'SILVA',
-		  standard => 'standard');
+		  standard => 'kraken2_std');
     my $db_dir = $db_map{$params->{database}};
     if (!$db_dir)
     {
