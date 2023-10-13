@@ -87,10 +87,10 @@ sub process_read_input
 			      },
 			     );
     $params->{$_} = $nparams->{$_} foreach keys %$nparams;
-
+    
+    print STDERR "Starting the config json....\n";
     my $json_string = encode_json($params);
-    # pushing the wrapper command
-    print STDERR "Starting the python wrapper....\n";
+
 
     #
     # Create json config file for the execution of this workflow.
@@ -128,7 +128,9 @@ sub process_read_input
 
     $params->{database} = metagenome_dbs . "/$params->{database}";
     write_file("$top/config.json", JSON::XS->new->pretty->canonical->encode(\%config_vars));
-
+    # pushing the wrapper command
+    print STDERR "Starting the python wrapper....\n";
+    
     my @cmd = ("python3", "$wf_dir/snakefile/wrapper.py", "$top/config.json");
 
     print STDERR "Run: @cmd\n";
