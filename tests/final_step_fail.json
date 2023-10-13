@@ -1,0 +1,21 @@
+{   "failure_expected": 1,
+    "paired_sample_id": "",
+    "single_sample_id": "",
+    "srr_sample_id": "16S_fq",
+    "sequence_type": "wgs",
+    "analysis_type": "microbiome",
+    "database": "bvbrc",
+    "host_genome": "no_host",
+    "confidence_interval": "0.1",
+    "save_classified_sequences": "false",
+    "save_unclassified_sequences": "false",
+    "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification",
+    "output_file": "16s_fq_submitted_to_wgs_mcirobiome",
+    "srr_libs": [
+        {
+            "title": "Epithelial-derived IL-23 is a driver of oral mucosal inflammatory disease",
+            "srr_accession": "SRR26127838",
+            "sample_id": "SRR26127838"
+        }
+    ]
+}
