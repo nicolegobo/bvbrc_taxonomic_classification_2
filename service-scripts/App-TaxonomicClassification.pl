@@ -25,21 +25,7 @@ $app->run(\@ARGV);
 sub run_classification
 {
     my($app, $app_def, $raw_params, $params) = @_;
-    
-    my %db_map = (
-		  bvbrc => 'kraken2_brc',
-		  Greengenes => 'Greengenes',
-		  SILVA => 'SILVA',
-		  standard => 'kraken2_std');
-    my $db_dir = $db_map{$params->{database}};
-    if (!$db_dir)
-    {
-	die "Invalid database name '$params->{database}' specified. Valid values are " . join(", ", map { qq("$_") } keys %db_map);
-    }
-
 	process_read_input($app, $params);
-
-
 }
 
 sub process_read_input
@@ -119,14 +105,29 @@ sub process_read_input
     $config_vars{input_data_dir} = $staging;
     $config_vars{output_data_dir} = $output;
     $config_vars{snakemake} = $snakemake;
-    $config_vars{params} = $params;
     $config_vars{cores} = $ENV{P3_ALLOCATED_CPU} // 2;
 
     #
     # Database selection
     #
+    
+    my %db_map = (
+		  bvbrc => 'kraken2_brc',
+		  Greengenes => 'Greengenes',
+		  SILVA => 'SILVA',
+		  standard => 'kraken2_std');
 
-    $params->{database} = metagenome_dbs . "/$params->{database}";
+    # define database according to path in metageome_dbs and name in db path
+    my $db_dir = metagenome_dbs . "/$db_map{$params->{database}}";
+        if (!$db_dir)
+    {
+	die "Invalid database name '$params->{database}' specified. Valid values are " . join(", ", map { qq("$_") } keys %db_map);
+    }
+    # update parameter files to have the database directory
+    $params->{database} = $db_dir;
+    # add the updated path to the parameters file
+    $config_vars{params} = $params;
+    # write a config for the wrapper to parse
     write_file("$top/config.json", JSON::XS->new->pretty->canonical->encode(\%config_vars));
     # pushing the wrapper command
     print STDERR "Starting the python wrapper....\n";

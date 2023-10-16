@@ -1,0 +1,25 @@
+{
+    "paired_sample_id": "mini_SRR12486988",
+    "single_sample_id": "",
+    "srr_sample_id": "",
+    "analysis_type": "pathogen",
+    "database": "standard",
+    "host_genome": "no_host",
+    "confidence_interval": "0.1",
+    "save_classified_sequences": "false",
+    "save_unclassified_sequences": "false",
+    "output_path": "/nbowers@bvbrc/home/kicking_the_tires",
+    "output_file": "microbiome_standard_db_multisample",
+    "paired_end_libs": [
+        {
+            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/mini_SRR14092310_R1.fastq.gz",
+            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/mini_SRR14092310_R2.fastq.gz",
+            "sample_id": "mini_SRR14092310"
+        },
+        {
+            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/mini_SRR12486988_R1.fastq.gz",
+            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/mini_SRR12486988_R2.fastq.gz",
+            "sample_id": "mini_SRR12486988"
+        }
+    ]
+}
