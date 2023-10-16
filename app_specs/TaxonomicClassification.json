@@ -28,7 +28,7 @@
   },
   {
     "id": "analysis_type",
-    "desc": "Workflow type (pathogen / microbiome)",
+    "desc": "Workflow type (pathogen / microbiome / 16S)",
     "required": 1,
     "default": "16S",
     "label": "Analysis Type",

@@ -1,0 +1,26 @@
+{
+    "failure_expected": 1,
+    "paired_sample_id": "empty_pair",
+    "single_sample_id": "empty_single",
+    "srr_sample_id": "",
+    "sequence_type": "sixteenS",
+    "database": "SILVA",
+    "confidence_interval": "0.1",
+    "save_classified_sequences": "false",
+    "save_unclassified_sequences": "false",
+    "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/",
+    "output_file": "empty_fqs_test",
+    "paired_end_libs": [
+        {
+            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/empty_r1.fastq",
+            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/empty_r2.fastq",
+            "sample_id": "empty_pair"
+        }
+    ],
+    "single_end_libs": [
+        {
+            "read": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/empty_single.fastq",
+            "sample_id": "empty_single"
+        }
+    ]
+}

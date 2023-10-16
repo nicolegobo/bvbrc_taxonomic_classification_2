@@ -14,6 +14,11 @@
             "title": "Bacterial composition and diversity of biological soil crusts",
             "srr_accession": "SRR26088207",
             "sample_id": "SRR26088207"
+        },
+        {
+            "title": "Epithelial-derived IL-23 is a driver of oral mucosal inflammatory disease",
+            "srr_accession": "SRR26127838",
+            "sample_id": "SRR26127838"
         }
     ]
 }

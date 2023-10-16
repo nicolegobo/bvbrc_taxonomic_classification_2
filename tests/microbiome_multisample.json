@@ -12,9 +12,14 @@
     "output_file": "wgs_microbiome_paired",
     "srr_libs": [
         {
-            "title": "The role of Enterococcus in allo-HCT patient outcome",
-            "srr_accession": "SRR14092310",
-            "sample_id": "SRR14092310"
+            "title": "Diagnosing corneal infections in formalin fixed specimens using next generation sequencing",
+            "srr_accession": "SRR12486988",
+            "sample_id": "SRR12486988"
+        },
+        {
+        "title": "The role of Enterococcus in allo-HCT patient outcome",
+        "srr_accession": "SRR14092310",
+        "sample_id": "SRR14092310"
         }
     ]
 }
