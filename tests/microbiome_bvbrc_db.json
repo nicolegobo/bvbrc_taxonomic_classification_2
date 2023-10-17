@@ -1,0 +1,20 @@
+{
+    "paired_sample_id": "mini_SRR14092310",
+    "single_sample_id": "",
+    "srr_sample_id": "",
+    "analysis_type": "microbiome",
+    "database": "bvbrc",
+    "host_genome": "no_host",
+    "confidence_interval": "0.1",
+    "save_classified_sequences": "false",
+    "save_unclassified_sequences": "false",
+    "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/",
+    "output_file": "wgs_microbiome_paired",
+    "paired_end_libs": [
+        {
+            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/mini_SRR14092310_R1.fastq.gz",
+            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/mini_SRR14092310_R2.fastq.gz",
+            "sample_id": "mini_SRR14092310"
+        }
+    ]
+}
