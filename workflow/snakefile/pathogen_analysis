@@ -116,7 +116,7 @@ rule multiqc:
         '''
         multiqc --version
 
-        multiqc . \
+        multiqc output/. \
             -c {input.multiqc_config} \
             -o {params.landing_dir} --fullnames \
             -f \
