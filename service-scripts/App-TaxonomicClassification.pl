@@ -157,17 +157,32 @@ sub preflight
 	die "Readset failed to validate. Errors:\n\t" . join("\n\t", @$errs);
     }
 
-# this will require changes once we decide what to do about the databases
-    # my $mem = "32G";
-    my $mem = "160G";
+    #
+    # We are now (10/2023) loading the large databases from local disk on specified nodes.
+    #
+    # The resource_map below is designed to reflect current sizes. We only constrain
+    # execution to the kraken_db constraint / partition for the large databases. The other
+    # ones page in quickly so do not require dedicated resources.
+    #
 
-    #
-    # Kraken DB requires a lot more memory.
-    #
-    # if (lc($params->{database}) eq 'bvbrc')
-    # {
-	# $mem = "160G";
-    # }
+    my $kraken_db = { constraint => 'kraken_db', partition => 'kraken_db' };
+    my %resource_map =
+	(
+	 bvbrc => { mem => "150G", policy => $kraken_db },
+	 standard => { mem => "80G", policy => $kraken_db },
+	 Greengenes => { mem => "8G" },
+	 SILVA => { mem => "8G"},
+     );
+
+    my $resource_required = $resource_map{$params->{database}};
+    print STDERR "Resource request for $params->{database}: " . Dumper($resource_required);
+    if (!$resource_required)
+    {
+	die "No resource found for database $params->{database}";
+    }
+
+    my $mem = $resource_required->{mem};
+    my $policy = $resource_required->{policy};
     
     my $time = 60 * 60 * 10;
     my $pf = {
@@ -175,7 +190,7 @@ sub preflight
 	memory => $mem,
 	runtime => $time,
 	storage => 1.1 * ($comp_size + $uncomp_size),
-	policy_data => { constraint => 'kraken_db', partition => 'kraken_db' }
+	($policy ? (policy_data => $policy) : ()),
     };
     return $pf;
 }
