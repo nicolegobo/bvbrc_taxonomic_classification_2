@@ -71,7 +71,7 @@ def post_processing_check(dict_samples, output_dir):
     incomplete = []
     for sample_name in dict_samples:
         # check for problematic Kraken results
-        krona_path = f"{output_dir}/{sample_name}_krona.html"
+        krona_path = f"{output_dir}/{sample_name}_sankey.html"
         if os.path.isfile(krona_path) == True:
             msg = f"{sample_name}"
             complete.append(msg)
