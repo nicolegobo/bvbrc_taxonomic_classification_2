@@ -26,12 +26,10 @@ rule_all_list = [
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
 ## multisample comparison and visualizations will either fail or be redundant if only one sample present
 if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
-    # ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > generate_sample_krona_plots > generate_sankey_plots > multiqc 
     ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > generate_sankey_plots > multiqc 
     msg = "preforming analysis for only one sample - DOES NOT INCLUDE multisample_comparison.html \n"
     sys.stderr.write(msg)
 else:
-    # ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > multisample_comp_table > clean_up_multisample_html_files > multiqc
     ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > calculate_beta_diversity > generate_sankey_plots > multisample_comp_table > clean_up_multisample_html_files > multiqc
     msg = "preforming analysis for multiple samples - INCLUDES multisample_comparison.html \n"
     sys.stderr.write(msg)
