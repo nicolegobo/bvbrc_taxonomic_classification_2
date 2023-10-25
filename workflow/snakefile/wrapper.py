@@ -66,10 +66,10 @@ def load_hisat_indicies(input_dict):
     return
 
 
-def post_processing_check(dict_samples, output_dir):
+def post_processing_check(all_sample_ids, output_dir):
     complete = []
     incomplete = []
-    for sample_name in dict_samples:
+    for sample_name in all_sample_ids:
         # check for problematic Kraken results
         krona_path = f"{output_dir}/{sample_name}_sankey.html"
         if os.path.isfile(krona_path) == True:
@@ -89,24 +89,26 @@ def post_processing_check(dict_samples, output_dir):
         return True
 
 
-def preprocessing_check(input_dir, output_dir):
+def preprocessing_check(input_dir, output_dir, input_dict):
+    ## Using the input dictionary instead of path from staging directory due to file name confusion
+    # Parse "sample_id" from "paired_end_libs"
+    paired_sample_ids = [item["sample_id"] for item in input_dict.get("paired_end_libs", [])]
+
+    # Parse "sample_id" from "single_end_libs"
+    single_sample_ids = [item["sample_id"] for item in input_dict.get("single_end_libs", [])]
+
+    # Parse "sample_id" from "srr_libs"
+    srr_sample_ids = [item["sample_id"] for item in input_dict.get("srr_libs", [])]
+    # Merge all sample IDs into one list
+    all_sample_ids = paired_sample_ids + single_sample_ids + srr_sample_ids
+
     # file check for preprocessing/kraken run
     dict_samples = {}
     complete = []
     incomplete = []
-    # get sample names for both file types
-    paired_reads = glob.glob(f"{input_dir}/pe_reads/*_R1.fastq.gz")
-    for read in paired_reads:
-        basename = os.path.basename(read)
-        sample_name = basename.split("_R1")[0]
-        dict_samples[sample_name] = True
-    single_reads = glob.glob(f"{input_dir}/se_reads/*.fastq.gz")
-    for read in single_reads:
-        basename = os.path.basename(read)
-        sample_name = basename.split(".")[0]
-        dict_samples[sample_name] = True
-    # check if Kraken report exists for both files
-    for sample_name in dict_samples:
+
+    # check if Kraken report exists for each sample ID
+    for sample_name in all_sample_ids:
         report_path = f"{output_dir}/{sample_name}/kraken_output/{sample_name}_k2_output.txt"
         if os.path.isfile(report_path) == True:
             complete.append(sample_name)
@@ -121,13 +123,14 @@ def preprocessing_check(input_dir, output_dir):
         sys.exit(1)
         ## return False
     else:
-        return True, dict_samples
+        msg = "preprocessing complete \n"
+        sys.stderr.write(msg)
+        return True, all_sample_ids
 
 def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
     # process any paired reads
     input_dir = config["input_data_dir"]
     SNAKEMAKE_PATH = config["snakemake"]
-    ### relative path running from service-script ###
     SNAKEFILE_DIR = f"{config['workflow_dir']}/snakefile/"
 
     common_params = [
@@ -151,9 +154,9 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "se_fastq_processing_16s")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
-    kraken_check_result = preprocessing_check(input_dir, output_dir)
+    kraken_check_result = preprocessing_check(input_dir, output_dir, input_dict)
     kraken_check = kraken_check_result[0]
-    dict_samples = kraken_check_result[1]
+    all_sample_ids = kraken_check_result[1]
     
     if  kraken_check == True:
         # if all of the kraken report files exist then the final step will trigger.
@@ -164,7 +167,7 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
             subprocess.run(cmd)
     # file check if anything is wrong with the kraken outputs it should fail to 
     # produce krona plot
-    krona_check = post_processing_check(dict_samples, output_dir)
+    krona_check = post_processing_check(all_sample_ids, output_dir)
     if krona_check == True:
         msg = "16s analysis is complete \n"
         sys.stderr.write(msg)
@@ -172,10 +175,9 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
 
 # run the snakefile command for WGS
 def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
-    # process any paired reads
+
     input_dir = config["input_data_dir"]
     SNAKEMAKE_PATH = config["snakemake"]
-    ### relative path running from service-script ###
     SNAKEFILE_DIR = f"{config['workflow_dir']}/snakefile/"
 
     common_params = [
@@ -189,7 +191,8 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
 
     if config["cores"] == 1:
         common_params.append("--debug")
-        
+    
+    # process any paired reads
     if os.path.exists(f"{input_dir}/pe_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "pe_fastq_processing")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
@@ -200,9 +203,10 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "se_fastq_processing")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
         subprocess.run(cmd)
-    kraken_check_result = preprocessing_check(input_dir, output_dir)
+    kraken_check_result = preprocessing_check(input_dir, output_dir, input_dict)
+    ### check!
     kraken_check = kraken_check_result[0]
-    dict_samples = kraken_check_result[1]
+    all_sample_ids = kraken_check_result[1]
 
     if  kraken_check == True:
         # if all of the kraken report files exist then the final step will trigger.
@@ -216,8 +220,8 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "microbiome_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
             subprocess.run(cmd)
-    # file check
-    krona_check = post_processing_check(dict_samples, output_dir)
+    # final file check
+    krona_check = post_processing_check(all_sample_ids, output_dir)
     if krona_check == True:
         msg = " WGS analysis is complete \n"
         sys.stderr.write(msg)
@@ -235,14 +239,13 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
         paired_sample_dict = {}
         ws_paired_reads = []
         ws_paired_reads = input_dict["paired_end_libs"]
-        ### relative path running from service-script ###
+
         pe_path= f"{input_dir}/pe_reads"
         os.makedirs(pe_path, exist_ok = True)
 
         for i in range(len(ws_paired_reads)):
             read1_filename = ws_paired_reads[i]["read1"].split("/")[-1]
             read1_filepath = check_input_fastqs(input_dir, read1_filename, files_to_zip)
-            # shutil.copy(read1_filepath, "/home/nbowers/bvbrc-dev/dev_container/modules/bvbrc_taxonomic_classification_2/service-scripts/test")
 
             read2_filename = ws_paired_reads[i]["read2"].split("/")[-1]
             read2_filepath = check_input_fastqs(input_dir, read2_filename, files_to_zip)
@@ -254,14 +257,13 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
             pe_r1_samplename = f"{sample_id}_R1.fastq.gz"
             pe_r2_samplename = f"{sample_id}_R2.fastq.gz"
             #sample_ids.append(sample_id)
-
             paired_sample_dict[read1_filename] = pe_r1_samplename
             paired_sample_dict[read2_filename] = pe_r2_samplename
 
             to_copy.append([read1_filepath, f"{input_dir}/pe_reads/{pe_r1_samplename}"])
             to_copy.append([read2_filepath, f"{input_dir}/pe_reads/{pe_r2_samplename}"])
-            
-    
+
+
     #### single reads ####
     if len(input_dict["single_end_libs"]) != 0:
         single_end_sample_dict = {}
@@ -333,7 +335,7 @@ def main(argv):
     except:
         pass
     if input_dict["analysis_type"] == "pathogen" or input_dict["analysis_type"] == "microbiome":
-        run_wgs_snakefile(input_dict, input_dir, output_dir,  config)
+        run_wgs_snakefile(input_dict, input_dir, output_dir, config)
     elif input_dict["analysis_type"] == "16S":
         run_16s_snakefile(input_dict, input_dir, output_dir,  config)
     else:
