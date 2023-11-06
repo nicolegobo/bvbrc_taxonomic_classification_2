@@ -67,6 +67,7 @@ def load_hisat_indicies(input_dict):
 
 
 def post_processing_check(all_sample_ids, output_dir):
+    dict_samples = {}
     complete = []
     incomplete = []
     for sample_name in all_sample_ids:
@@ -86,6 +87,9 @@ def post_processing_check(all_sample_ids, output_dir):
         sys.stderr.write(msg)
         sys.exit(1)
     else:
+        msg = f"Reliable kraken results produced for the following samples: {complete}. \n \
+        Post Kraken processing complete"
+        sys.stderr.write(msg)
         return True
 
 
@@ -102,6 +106,16 @@ def preprocessing_check(input_dir, output_dir, input_dict):
     # Merge all sample IDs into one list
     all_sample_ids = paired_sample_ids + single_sample_ids + srr_sample_ids
 
+    # Edit the sample ids to match the sample ids defined in set-up-sample-dictionary(input_dir input_dict output_dir cores)
+    clean_sample_ids = []
+    for sample_id in all_sample_ids:
+        # Define a regular expression pattern to match all special characters except underscore
+        pattern = r"[^a-zA-Z0-9_]"
+        # Use the re.sub() function to replace all matches of the pattern with an empty string
+        sample_id = re.sub(pattern, "", sample_id)
+        clean_sample_ids.append(sample_id)
+    all_sample_ids = clean_sample_ids
+        
     # file check for preprocessing/kraken run
     dict_samples = {}
     complete = []
@@ -329,6 +343,7 @@ def main(argv):
     input_dict = config["params"]
     input_dir = config["input_data_dir"]
     output_dir = config["output_data_dir"]
+
     set_up_sample_dictionary(input_dir, input_dict, output_dir, min(8, int(config["cores"])))
     try:
         load_hisat_indicies(input_dict)
