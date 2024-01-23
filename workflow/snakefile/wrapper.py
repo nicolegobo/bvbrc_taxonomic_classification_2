@@ -10,7 +10,7 @@ import subprocess
 
 def check_input_fastqs(input_dir, filename, files_to_zip):
     input_path = f"{input_dir}/{filename}"
-    if input_path.endswith(".fastq.gz") or input_path.endswith(".fq.gz"):
+    if input_path.endswith("fastq.gz") or input_path.endswith("fq.gz"):
         return input_path
     
     elif input_path.endswith(".fastq") or input_path.endswith(".fq"):
