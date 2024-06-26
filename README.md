@@ -10,7 +10,8 @@ This module is a component of the BV-BRC build system. It is designed to fit int
 `dev_container` infrastructure which manages development and production deployment of
 the components of the BV-BRC. More documentation is available [here](https://github.com/BV-BRC/dev_container/tree/master/README.md).
 
-This service has one service speculation for classifying taxonomy from reads containing Whole Genome Sequences and 16S sequences defined [here](https://github.com/nicolegobo/bvbrc_taxonomic_classification_2/blob/main/app_specs/TaxonomicClassification.json).
+There is one application service specification defined here:
+1.  [Taxonomic Classification](app_specs): Service that that provides the backend for the BV-BRC web inerface; it takes reads as input.
 
 The code in this module provides the BV-BRC application service wrapper scripts for the genome annotation service as well
 as some backend utilities:
