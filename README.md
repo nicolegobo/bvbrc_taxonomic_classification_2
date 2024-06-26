@@ -20,7 +20,7 @@ as some backend utilities:
 | ----------- | ------- |
 | [App-TaxonomicClassification.pl](service-scripts/App-TaxonomicClassification.pl) | App script for the [taxonomic classification service](https://www.bv-brc.org/docs/quick_references/services/taxonomic_classification_service.html) |
 
-## See Also 
+## See also 
 * [Taxonomic Classification Service](https://www.bv-brc.org/app/TaxonomicClassification)
 * [Quick Reference](https://www.bv-brc.org/docs/quick_references/services/taxonomic_classification_service.html)
 * [Taxonomic Classification Service Tutorial](https://www.bv-brc.org/docs/tutorial/taxonomic_classification/taxonomic_classification.html)
