@@ -11,7 +11,7 @@ This module is a component of the BV-BRC build system. It is designed to fit int
 the components of the BV-BRC. More documentation is available [here](https://github.com/BV-BRC/dev_container/tree/master/README.md).
 
 There is one application service specification defined here:
-1.  [Taxonomic Classification](app_specs): Service that that provides the backend for the BV-BRC web inerface; it takes reads as input.
+1.  [Taxonomic Classification](app_specs/TaxonomicClassification.md): Service that that provides the backend for the BV-BRC web inerface; it takes reads as input.
 
 The code in this module provides the BV-BRC application service wrapper scripts for the genome annotation service as well
 as some backend utilities:
