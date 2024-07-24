@@ -100,7 +100,23 @@ sub process_read_input
     # Find snakemake. We need to put this in a standard location in the runtime but for now
     # use this.
     #
-    my $snakemake = "$ENV{KB_RUNTIME}/artic-ncov2019/bin/snakemake";
+    my @sm_dirs = ("$ENV{KB_RUNTIME}/bin", "$ENV{KB_RUNTIME}/artic-ncov2019/bin");
+    my $snakemake;
+    for my $dir (@sm_dirs)
+    {
+	my $p = "$dir/snakemake";
+	if (-x $p)
+	{
+	    $snakemake = $p;
+	    last;
+	}
+    }
+    if (!$snakemake)
+    {
+	die "Cannot find snakemake in @sm_dirs\n";
+    }
+    warn "Snakemake found at $snakemake\n";
+    system($snakemake, "--version");
     $config_vars{workflow_dir} = $wf_dir;
     $config_vars{input_data_dir} = $staging;
     $config_vars{output_data_dir} = $output;
