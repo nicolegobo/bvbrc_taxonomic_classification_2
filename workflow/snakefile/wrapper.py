@@ -1,6 +1,5 @@
 #!/opt/patric-common/runtime/bin/python3
 import csv
-import glob 
 import json 
 import os
 import re
