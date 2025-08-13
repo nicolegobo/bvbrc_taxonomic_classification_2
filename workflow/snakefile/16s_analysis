@@ -15,7 +15,6 @@ workflow_dir = config["workflow_dir"]
 
 rule_all_list = [
     expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample = samples),
-    expand('output/{sample}/bracken_output/{sample}_species_richness.csv', sample = samples),
     expand('output/{sample}/{sample}_alpha_diversity.csv', sample = samples),
     expand('output/{sample}_sankey.html', sample = samples),
     expand('output/{sample}_krona.html', sample = samples),
@@ -28,11 +27,11 @@ rule_all_list = [
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
 ## multisample comparison and visualizations will either fail or be redundant if only one sample present
 if len(se_samples) == 1 and len(pe_samples) == 0 or len(se_samples) == 0 and len(pe_samples) == 2:
-    ruleorder: bracken_abundance_estimation > calculate_species_richness > calculate_alpha_diversity > merge_alpha_diversity_stats > generate_sample_krona_plots > generate_sankey_plots > multiqc 
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > generate_sample_krona_plots > generate_sankey_plots > multiqc 
     msg = "preforming analysis for only one sample - DOES NOT INCLUDE multisample_comparison.html \n"
     sys.stderr.write(msg)
 else:
-    ruleorder: bracken_abundance_estimation > calculate_species_richness > calculate_alpha_diversity > merge_alpha_diversity_stats > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > multisample_comp_table > clean_up_multisample_html_files > multiqc
+    ruleorder: bracken_abundance_estimation > calculate_alpha_diversity > merge_alpha_diversity_stats > calculate_beta_diversity > generate_sample_krona_plots > generate_multisample_krona_plots > generate_sankey_plots > multisample_comp_table > clean_up_multisample_html_files > multiqc
     msg = "preforming analysis for multiple samples - INCLUDES multisample_comparison.html \n"
     sys.stderr.write(msg)
     rule_all_list.append('output/multisample_comparison.html')
@@ -66,21 +65,6 @@ rule bracken_abundance_estimation:
             -l {params.level_of_abundance_estimation} \
             --out-report {output.bracken_report} \
             -t 10
-        '''
-
-rule calculate_species_richness:
-    input:
-        bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt',
-    # params:
-    #     temp_alpha_diversity_csv = '{sample}_alpha_diversity_tmp.csv',
-    #     alpha_stats_cleanup_script = os.path.join(workflow_dir, 'scripts/alpha_stats_cleanup.py')
-    output:
-        species_richness_csv = 'output/{sample}/bracken_output/{sample}_species_richness.csv',
-        # species_richness_html = 'output/{sample}/{sample}_species_richness.html'
-    shell:
-        r'''
-        /home/ac.jsheriff/dev_container/modules/bvbrc_taxonomic_classification_2/workflow/scripts/calc_richness_bracken.R \
-        {input.bracken_report} {output.species_richness_csv}
         '''
 
 rule calculate_alpha_diversity:
@@ -187,7 +171,7 @@ rule generate_sankey_plots:
     input:
         bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     params:
-        sankey_script = os.path.join(workflow_dir, "/home/ac.jsheriff/dev_container/modules/bvbrc_taxonomic_classification_2/workflow/scripts/sankey_plot_gen.R"),
+        sankey_script = os.path.join(workflow_dir, "scripts/sankey_plot_gen.R"),
         tmp_sankey_dir = directory('output/{sample}_sankey_files/')
     output:
         sankey_plot = 'output/{sample}_sankey.html',
@@ -205,7 +189,7 @@ rule multisample_comp_table:
     input:
         kraken2_report = set(expand('output/{sample}/kraken_output/{sample}_k2_report.txt', sample = samples)),
     params:
-        multisample_comparsion_script = os.path.join(workflow_dir, "/home/ac.jsheriff/dev_container/modules/bvbrc_taxonomic_classification_2/workflow/scripts/pavian_multisample_comparsion.R"),
+        multisample_comparsion_script = os.path.join(workflow_dir, "scripts/pavian_multisample_comparsion.R"),
         output_dir = directory('output/'),
     output:
         multi_comp = 'output/multisample_comparison.html',
