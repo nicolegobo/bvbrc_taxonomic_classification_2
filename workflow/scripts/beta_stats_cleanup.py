@@ -43,7 +43,7 @@ def edit_beta_stats(input_tsv, output_tsv, output_html):
     # make the heatmap
     fig = px.imshow(df, text_auto=True,
                     labels=dict(x="Sample IDs", y="Sample IDs", color="Bray-Curtis Index"),
-                    title ='Beta Diversity (Bray-Curtis Index of Dissimilarity) <br><sup> If two samples have the same microbes at the same abundance the disimilarity is 0. Conversely, if there are no shared microbes between the disimilarity is 1. </sup>'
+                    title ='Beta Diversity (Bray-Curtis Index of Dissimilarity) <br><sup> If two samples have the same microbes at the same abundance the dissimilarity is 0. Conversely, if there are no shared microbes between the dissimilarity is 1. </sup>'
                     )
 
     fig.update_yaxes(showgrid=True, tickangle=45)
