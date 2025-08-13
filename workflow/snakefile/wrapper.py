@@ -13,7 +13,7 @@ def check_input_fastqs(input_path, sample_id, gzip_targets):
     sample_id = clean_sample_id(sample_id)
 
     if input_path.endswith("fastq.gz") or input_path.endswith("fq.gz"):
-        return sample_id
+        return sample_id, ""
     
     elif input_path.endswith(".fastq") or input_path.endswith(".fq"):
         zipped_path = input_path + ".gz"
@@ -21,13 +21,13 @@ def check_input_fastqs(input_path, sample_id, gzip_targets):
         if os.path.exists(zipped_path) == True:
             msg =f"zipped file exists using {input_path}.gz instead \n"
             sys.stderr.write(msg)
-            return sample_id
+            return sample_id, ""
 
         else:
             msg = f"{input_path} identified as unzipped, zipping for analysis \n"
             sys.stderr.write(msg)
             gzip_targets.append(input_path)
-            return sample_id
+            return sample_id, ".gz"
     else:
         msg = f"Error {input_path} not end in 'fastq' or 'fastq.gz'. \n {input_path} ignored \n"
         sys.stderr.write(msg)
@@ -166,14 +166,14 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
     if os.path.exists(f"{input_dir}/pe_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "pe_fastq_processing_16s")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
-        sys.stderr.write(shlex.join(cmd))
+        print(shlex.join(cmd), file=sys.stderr)
         subprocess.run(cmd)
 
     # Process any single end reads
     if os.path.exists(f"{input_dir}/se_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "se_fastq_processing_16s")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
-        sys.stderr.write(shlex.join(cmd))
+        print(shlex.join(cmd), file=sys.stderr)
         subprocess.run(cmd)
     kraken_check_result = preprocessing_check(input_dir, output_dir, input_dict)
     kraken_check = kraken_check_result[0]
@@ -185,7 +185,7 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
         if input_dict["analysis_type"] == "16S":
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "16s_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
-            sys.stderr.write(shlex.join(cmd))
+            print(shlex.join(cmd), file=sys.stderr)
             subprocess.run(cmd)
     # File check if anything is wrong with the kraken outputs it should fail to 
     # Produce krona plot
@@ -218,14 +218,14 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
     if os.path.exists(f"{input_dir}/pe_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "pe_fastq_processing")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
-        sys.stderr.write(shlex.join(cmd))
+        print(shlex.join(cmd), file=sys.stderr)
         subprocess.run(cmd)
 
     # Process any single reads
     if os.path.exists(f"{input_dir}/se_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "se_fastq_processing")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
-        sys.stderr.write(shlex.join(cmd))
+        print(shlex.join(cmd), file=sys.stderr)
         subprocess.run(cmd)
     kraken_check_result = preprocessing_check(input_dir, output_dir, input_dict)
     ### check!
@@ -238,13 +238,13 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
         if input_dict["analysis_type"] == "pathogen":
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "pathogen_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
-            sys.stderr.write(shlex.join(cmd))
+            print(shlex.join(cmd), file=sys.stderr)
             subprocess.run(cmd)
 
         if input_dict["analysis_type"] == "microbiome":
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "microbiome_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
-            sys.stderr.write(shlex.join(cmd))
+            print(shlex.join(cmd), file=sys.stderr)
             subprocess.run(cmd)
     # Final file check
     krona_check = post_processing_check(all_sample_ids, output_dir)
@@ -267,17 +267,17 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
         # for item in ws_paired_reads:
         for item in input_dict["paired_end_libs"]:
             # Managing files
-            sample_id = check_input_fastqs(item["read1"], item["sample_id"], gzip_targets)
-            sample_id = check_input_fastqs(item["read2"], item["sample_id"], gzip_targets)
+            sample_id_r1, file_extension_r1 = check_input_fastqs(item["read1"], item["sample_id"], gzip_targets)
+            sample_id_r2, file_extension_r2 = check_input_fastqs(item["read2"], item["sample_id"], gzip_targets)
             # This will either use a zipped file or the file will already be zipped when the command runs
-            files_to_move.append((item["read2"]+".gz", f"{pe_path}/{sample_id}_R2.fastq.gz"))
-            files_to_move.append((item["read1"]+".gz", f"{pe_path}/{sample_id}_R1.fastq.gz"))
+            files_to_move.append((item["read1"]+"{}".format(file_extension_r1), "{}/{}_R1.fastq.gz".format(pe_path, sample_id_r1)))
+            files_to_move.append((item["read2"]+"{}".format(file_extension_r2), "{}/{}_R2.fastq.gz".format(pe_path, sample_id_r2)))
             
             # Logging input for sample key csv
             read1_filename  = item["read1"].split("/")[-1]
-            paired_sample_dict[read1_filename] = f"{pe_path}/{sample_id}_R2.fastq.gz"
+            paired_sample_dict[read1_filename] = "{}/{}_R1.fastq.gz".format(pe_path, sample_id_r1)
             read2_filename  = item["read2"].split("/")[-1]
-            paired_sample_dict[read2_filename] = f"{pe_path}/{sample_id}_R1.fastq.gz"
+            paired_sample_dict[read2_filename] = "{}/{}_R2.fastq.gz".format(pe_path, sample_id_r2)
 
     #### single reads ####
     if input_dict.get("single_end_libs"):
@@ -288,13 +288,14 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
         # for item in ws_single_end_reads:
         for item in input_dict["single_end_libs"]:
             # Managing files
-            sample_id = check_input_fastqs(item["read"], item["sample_id"], gzip_targets)
+            sample_id, file_extension = check_input_fastqs(item["read"], item["sample_id"], gzip_targets)
             # This will either use a zipped file or the file will already be zipped when the command runs
-            files_to_move.append((item["read"]+".gz", f"{se_path}/{sample_id}_fastq.gz"))
+            files_to_move.append((item["read"]+"{}".format(file_extension), "{}/{}.fastq.gz".format(se_path, sample_id)))
+
 
             # Logging for sample key csv
             se_filename = item["read"].split("/")[-1]
-            single_end_sample_dict[se_filename] = f"{se_path}/{sample_id}_fastq.gz"
+            single_end_sample_dict[se_filename] = "{}/{}.fastq.gz".format(se_path, sample_id)
 
     # In parallel, gzip anything that needs to be gzipped
     # We deferred the move until after the zip
@@ -305,7 +306,6 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
     
 
     for (src, dest) in files_to_move:
-        print(src, dest)
         # evaulate the paths for gz path
         # actual_src = src if src.endswith("gz") else src + ".gz"
         shutil.move(src, dest)
@@ -342,7 +342,6 @@ def main(argv):
     input_dict = config["params"]
     input_dir = config["input_data_dir"]
     output_dir = config["output_data_dir"]
-
     set_up_sample_dictionary(input_dir, input_dict, output_dir, min(8, int(config["cores"])))
     try:
         load_hisat_indicies(input_dict)
