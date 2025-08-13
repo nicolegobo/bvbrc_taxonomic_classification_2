@@ -12,9 +12,7 @@ configfile: "config.json"
 workflow_dir = config["workflow_dir"]
 database_path = config["params"]["database"]
 workflow_dir = config["workflow_dir"]
-opt_flag = config["save_intermediate_file"]
 
-print('test')
 rule_all_list = [
     expand('output/{sample}/bracken_output/{sample}_bracken_output.txt', sample = samples),
     expand('output/{sample}/{sample}_alpha_diversity.csv', sample = samples),
@@ -22,9 +20,8 @@ rule_all_list = [
     expand('output/{sample}_krona.html', sample = samples),
     expand('clean_up/{sample}_sankey_files', sample = samples),
     'output/alpha_diversity.csv',
-    'output/multiqc_report.html',
+    'output/Taxonomic-Classification-Service-BVBRC_multiqc_report.html',
     'clean_up/multiqc_data',
-    "job_complete.txt"
     ]
 
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
@@ -45,7 +42,6 @@ else:
 rule all:
     input:
         rule_all_list
-
 rule bracken_abundance_estimation:
     input:
         k2report = 'output/{sample}/kraken_output/{sample}_k2_report.txt'
@@ -127,7 +123,7 @@ rule calculate_beta_diversity:
         beta_stats_cleanup_script = os.path.join(workflow_dir, 'scripts/beta_stats_cleanup.py'),
         level_of_abundance_estimation = 'G'
     output:
-        beta_diversity_tsv = 'output/beta_diversity.tsv',
+        beta_diversity_csv = 'output/beta_diversity.csv',
         beta_diversity_html= 'output/beta_stats_heatmap.html'
     shell:
         '''
@@ -137,7 +133,7 @@ rule calculate_beta_diversity:
         --level {params.level_of_abundance_estimation} \
         > {params.temp_beta_diversity_csv}
         
-        python3 {params.beta_stats_cleanup_script} {params.temp_beta_diversity_csv} {output.beta_diversity_tsv} {output.beta_diversity_html}
+        python3 {params.beta_stats_cleanup_script} {params.temp_beta_diversity_csv} {output.beta_diversity_csv} {output.beta_diversity_html}
         '''
 
 rule generate_sample_krona_plots:
@@ -176,8 +172,7 @@ rule generate_sankey_plots:
         bracken_report = 'output/{sample}/bracken_output/{sample}_bracken_report.txt'
     params:
         sankey_script = os.path.join(workflow_dir, "scripts/sankey_plot_gen.R"),
-        tmp_sankey_dir = directory('output/{sample}_sankey_files/'),
-        clean_up_dir = directory("clean_up")
+        tmp_sankey_dir = directory('output/{sample}_sankey_files/')
     output:
         sankey_plot = 'output/{sample}_sankey.html',
         cl_sankey_dir = directory('clean_up/{sample}_sankey_files')
@@ -185,7 +180,7 @@ rule generate_sankey_plots:
         '''
         {params.sankey_script} --input {input.bracken_report} --output {output.sankey_plot}
         
-        mkdir -p {params.clean_up_dir}
+        mkdir -p clean_up
         
         mv {params.tmp_sankey_dir} {output.cl_sankey_dir}
         '''
@@ -220,22 +215,23 @@ rule multiqc:
     input:
         multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
     params:
-        landing_dir = 'output',
-        tmp_multiqc_dir = directory('output/multiqc_data')
+        landing_dir = 'output/.',
+        tmp_multiqc_report = "clean_up/multiqc_data/Taxonomic-Classification-Service-BVBRC_multiqc_report.html"
     output:
-        'output/multiqc_report.html',
+        out_multiqc_report = "output/Taxonomic-Classification-Service-BVBRC_multiqc_report.html",
         cl_multiqc_dir = directory('clean_up/multiqc_data')
     shell:
         '''
         multiqc --version
 
-        multiqc output/. \
+        mkdir -p {output.cl_multiqc_dir}
+
+        multiqc {params.landing_dir} \
             -c {input.multiqc_config} \
-            -o {params.landing_dir} --fullnames \
+            -o {output.cl_multiqc_dir} --fullnames \
             -f \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
         
-        mkdir -p {output.cl_multiqc_dir}
 
-        mv {params.tmp_multiqc_dir} {output.cl_multiqc_dir}
+        mv {params.tmp_multiqc_report} {output.out_multiqc_report}
         '''
