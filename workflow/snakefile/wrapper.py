@@ -1,17 +1,19 @@
 #!/opt/patric-common/runtime/bin/python3
 import csv
-import glob 
 import json 
 import os
 import re
-import sys
+import shlex
 import shutil
 import subprocess
+import sys
 
-def check_input_fastqs(input_dir, filename, files_to_zip):
-    input_path = f"{input_dir}/{filename}"
+def check_input_fastqs(input_path, sample_id, gzip_targets):
+    # start new 
+    sample_id = clean_sample_id(sample_id)
+
     if input_path.endswith("fastq.gz") or input_path.endswith("fq.gz"):
-        return input_path
+        return sample_id
     
     elif input_path.endswith(".fastq") or input_path.endswith(".fq"):
         zipped_path = input_path + ".gz"
@@ -19,19 +21,22 @@ def check_input_fastqs(input_dir, filename, files_to_zip):
         if os.path.exists(zipped_path) == True:
             msg =f"zipped file exists using {input_path}.gz instead \n"
             sys.stderr.write(msg)
-            return zipped_path
+            return sample_id
 
         else:
             msg = f"{input_path} identified as unzipped, zipping for analysis \n"
             sys.stderr.write(msg)
-            files_to_zip.append(input_path)
-            return zipped_path
+            gzip_targets.append(input_path)
+            return sample_id
     else:
         msg = f"Error {input_path} not end in 'fastq' or 'fastq.gz'. \n {input_path} ignored \n"
         sys.stderr.write(msg)
         sys.exit(1)
         pass
 
+
+def clean_sample_id(s):
+    return re.sub(r"[^a-zA-Z0-9_]", "", s)
 
 def format_inputs(raw_params):
     input_dict = json.loads(raw_params)
@@ -161,33 +166,36 @@ def run_16s_snakefile(input_dict, input_dir, output_dir,  config):
     if os.path.exists(f"{input_dir}/pe_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "pe_fastq_processing_16s")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
+        sys.stderr.write(shlex.join(cmd))
         subprocess.run(cmd)
 
-    # process any single end reads
+    # Process any single end reads
     if os.path.exists(f"{input_dir}/se_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "se_fastq_processing_16s")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
+        sys.stderr.write(shlex.join(cmd))
         subprocess.run(cmd)
     kraken_check_result = preprocessing_check(input_dir, output_dir, input_dict)
     kraken_check = kraken_check_result[0]
     all_sample_ids = kraken_check_result[1]
     
     if  kraken_check == True:
-        # if all of the kraken report files exist then the final step will trigger.
-        # paired and single end reads will be processed together
+        # If all of the kraken report files exist then the final step will trigger.
+        # Paired and single end reads will be processed together
         if input_dict["analysis_type"] == "16S":
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "16s_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
+            sys.stderr.write(shlex.join(cmd))
             subprocess.run(cmd)
-    # file check if anything is wrong with the kraken outputs it should fail to 
-    # produce krona plot
+    # File check if anything is wrong with the kraken outputs it should fail to 
+    # Produce krona plot
     krona_check = post_processing_check(all_sample_ids, output_dir)
     if krona_check == True:
         msg = "16s analysis is complete \n"
         sys.stderr.write(msg)
     return
 
-# run the snakefile command for WGS
+# Run the snakefile command for WGS
 def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
 
     input_dir = config["input_data_dir"]
@@ -206,16 +214,18 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
     if config["cores"] == 1:
         common_params.append("--debug")
     
-    # process any paired reads
+    # Process any paired reads
     if os.path.exists(f"{input_dir}/pe_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "pe_fastq_processing")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
+        sys.stderr.write(shlex.join(cmd))
         subprocess.run(cmd)
 
-    # process any single reads
+    # Process any single reads
     if os.path.exists(f"{input_dir}/se_reads"):
         SNAKEFILE = os.path.join(SNAKEFILE_DIR, "se_fastq_processing")
         cmd = common_params + ["--snakefile",  SNAKEFILE]
+        sys.stderr.write(shlex.join(cmd))
         subprocess.run(cmd)
     kraken_check_result = preprocessing_check(input_dir, output_dir, input_dict)
     ### check!
@@ -223,18 +233,20 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
     all_sample_ids = kraken_check_result[1]
 
     if  kraken_check == True:
-        # if all of the kraken report files exist then the final step will trigger.
-        # paired and single end reads will be processed together
+        # If all of the kraken report files exist then the final step will trigger.
+        # Paired and single end reads will be processed together
         if input_dict["analysis_type"] == "pathogen":
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "pathogen_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
+            sys.stderr.write(shlex.join(cmd))
             subprocess.run(cmd)
 
         if input_dict["analysis_type"] == "microbiome":
             SNAKEFILE = os.path.join(SNAKEFILE_DIR, "microbiome_analysis")
             cmd = common_params + ["--snakefile",  SNAKEFILE]
+            sys.stderr.write(shlex.join(cmd))
             subprocess.run(cmd)
-    # final file check
+    # Final file check
     krona_check = post_processing_check(all_sample_ids, output_dir)
     if krona_check == True:
         msg = " WGS analysis is complete \n"
@@ -243,75 +255,62 @@ def run_wgs_snakefile(input_dict, input_dir, output_dir,  config):
 
 
 def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
-    # set up the sample dictionary
     #### paired reads ####
-    files_to_zip = []
-    to_copy = []
-    #sample_ids = []
+    files_to_move = []
+    gzip_targets = []
 
-    if len(input_dict["paired_end_libs"]) != 0:
+    if input_dict.get("paired_end_libs"):
         paired_sample_dict = {}
-        ws_paired_reads = []
-        ws_paired_reads = input_dict["paired_end_libs"]
-
         pe_path= f"{input_dir}/pe_reads"
         os.makedirs(pe_path, exist_ok = True)
 
-        for i in range(len(ws_paired_reads)):
-            read1_filename = ws_paired_reads[i]["read1"].split("/")[-1]
-            read1_filepath = check_input_fastqs(input_dir, read1_filename, files_to_zip)
-
-            read2_filename = ws_paired_reads[i]["read2"].split("/")[-1]
-            read2_filepath = check_input_fastqs(input_dir, read2_filename, files_to_zip)
-            sample_id = ws_paired_reads[i]["sample_id"].split("/")[-1]
-            # Define a regular expression pattern to match all special characters except underscore
-            pattern = r"[^a-zA-Z0-9_]"
-            # Use the re.sub() function to replace all matches of the pattern with an empty string
-            sample_id = re.sub(pattern, "", sample_id)
-            pe_r1_samplename = f"{sample_id}_R1.fastq.gz"
-            pe_r2_samplename = f"{sample_id}_R2.fastq.gz"
-            #sample_ids.append(sample_id)
-            paired_sample_dict[read1_filename] = pe_r1_samplename
-            paired_sample_dict[read2_filename] = pe_r2_samplename
-
-            to_copy.append([read1_filepath, f"{input_dir}/pe_reads/{pe_r1_samplename}"])
-            to_copy.append([read2_filepath, f"{input_dir}/pe_reads/{pe_r2_samplename}"])
-
+        # for item in ws_paired_reads:
+        for item in input_dict["paired_end_libs"]:
+            # Managing files
+            sample_id = check_input_fastqs(item["read1"], item["sample_id"], gzip_targets)
+            sample_id = check_input_fastqs(item["read2"], item["sample_id"], gzip_targets)
+            # This will either use a zipped file or the file will already be zipped when the command runs
+            files_to_move.append((item["read2"]+".gz", f"{pe_path}/{sample_id}_R2.fastq.gz"))
+            files_to_move.append((item["read1"]+".gz", f"{pe_path}/{sample_id}_R1.fastq.gz"))
+            
+            # Logging input for sample key csv
+            read1_filename  = item["read1"].split("/")[-1]
+            paired_sample_dict[read1_filename] = f"{pe_path}/{sample_id}_R2.fastq.gz"
+            read2_filename  = item["read2"].split("/")[-1]
+            paired_sample_dict[read2_filename] = f"{pe_path}/{sample_id}_R1.fastq.gz"
 
     #### single reads ####
-    if len(input_dict["single_end_libs"]) != 0:
+    if input_dict.get("single_end_libs"):
         single_end_sample_dict = {}
-        ws_single_end_reads = []
-        ws_single_end_reads = input_dict["single_end_libs"]
-        ### relative path running from service-script ###
         se_path= f"{input_dir}/se_reads"
         os.makedirs(se_path, exist_ok = True)
 
-        for i in range(len(ws_single_end_reads)):
-            se_filename = ws_single_end_reads[i]["read"].split("/")[-1]
-            se_filepath = check_input_fastqs(input_dir, se_filename, files_to_zip)
-            sample_id = ws_single_end_reads[i]["sample_id"]
-            #sample_ids.append(sample_id)
+        # for item in ws_single_end_reads:
+        for item in input_dict["single_end_libs"]:
+            # Managing files
+            sample_id = check_input_fastqs(item["read"], item["sample_id"], gzip_targets)
+            # This will either use a zipped file or the file will already be zipped when the command runs
+            files_to_move.append((item["read"]+".gz", f"{se_path}/{sample_id}_fastq.gz"))
 
-            # Define a regular expression pattern to match all special characters except underscore
-            pattern = r"[^a-zA-Z0-9_]"
-            # Use the re.sub() function to replace all matches of the pattern with an empty string
-            sample_id = re.sub(pattern, "", sample_id)
-            se_samplename = f"{sample_id}.fastq.gz"
-            single_end_sample_dict[se_filename] = se_samplename
-            to_copy.append([se_filepath, f"{input_dir}/se_reads/{se_samplename}"])
+            # Logging for sample key csv
+            se_filename = item["read"].split("/")[-1]
+            single_end_sample_dict[se_filename] = f"{se_path}/{sample_id}_fastq.gz"
 
+    # In parallel, gzip anything that needs to be gzipped
+    # We deferred the move until after the zip
     #
-    # in parallel, gzip anything that needs to be gzipped
-    # We deferred the copy until after the zip
-    #
-    par_inp = "\n".join(files_to_zip + [""])
-    subprocess.run(["parallel", "-j", str(cores), "gzip", "{}"], input=par_inp,text=True)
+    if gzip_targets:
+        par_inp = "\n".join(gzip_targets + [""])
+        subprocess.run(["parallel", "-j", str(cores), "gzip", "{}"], input=par_inp,text=True)
+    
 
-    for (src, dest) in to_copy:
-        shutil.copy(src, dest)
+    for (src, dest) in files_to_move:
+        print(src, dest)
+        # evaulate the paths for gz path
+        # actual_src = src if src.endswith("gz") else src + ".gz"
+        shutil.move(src, dest)
 
-    # export the sample dictionary to .CSV
+    # Export the sample dictionary to .CSV
     with open(f"{output_dir}/sample_key.csv", "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["User sample name", "Analysis sample name"])
