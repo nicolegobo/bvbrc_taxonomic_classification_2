@@ -5,9 +5,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.offline as offline
 
-def edit_beta_stats(input_csv, output_csv, output_html):
+def edit_beta_stats(input_tsv, output_tsv, output_html):
     table_start = int
-    with open(input_csv, 'r') as infile:
+    with open(input_tsv, 'r') as infile:
         my_lines = [line.strip() for line in infile]
         sample_dict = {}
         for line in my_lines:
@@ -25,7 +25,7 @@ def edit_beta_stats(input_csv, output_csv, output_html):
                 sample_dict[numeric_value] = sample_id
             if line.startswith("x"):
                 table_start = my_lines.index(line)
-    df = pd.read_csv(input_csv, skiprows=table_start, sep='\t', index_col= 0)
+    df = pd.read_csv(input_tsv, skiprows=table_start, sep='\t', index_col= 0)
 
     df.columns = df.columns.astype(int)
     #rename columns in DataFrame sample_dict
@@ -36,9 +36,9 @@ def edit_beta_stats(input_csv, output_csv, output_html):
 
     # add description
     description = 'Bray-Curtis dissimilarity [1] examines the abundances of microbes that are shared between two samples, and the number of microbes found in each. Bray-Curtis dissimilarity ranges from 0 to 1. If both samples share the same number of microbes, at the same abundance, their "dissimilarity" will equal zero. If they have absolutely no shared microbes, they will have maximum dissimilarity, i.e. 1. \n'
-    with open(output_csv, 'w') as out_csv:
-        out_csv.write(description)
-        df.to_csv(out_csv, index=True)
+    with open(output_tsv, 'w') as out_tsv:
+        out_tsv.write(description)
+        df.to_csv(out_tsv, sep='\t', index=True)
     
     # make the heatmap
     fig = px.imshow(df, text_auto=True,
@@ -53,10 +53,10 @@ def edit_beta_stats(input_csv, output_csv, output_html):
 # run the script from service-script/app_taxonomic_classification 
 def main(argv):
     inputfile = argv
-    input_csv = inputfile[0]
-    output_csv = inputfile[1]
+    input_tsv = inputfile[0]
+    output_tsv = inputfile[1]
     output_html = inputfile[2]
-    edit_beta_stats(input_csv, output_csv, output_html)
+    edit_beta_stats(input_tsv, output_tsv, output_html)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

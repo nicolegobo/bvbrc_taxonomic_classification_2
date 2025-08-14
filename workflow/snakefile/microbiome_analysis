@@ -18,7 +18,7 @@ rule_all_list = [
         expand('output/{sample}_sankey.html', sample = samples),
         expand('clean_up/{sample}_sankey_files', sample = samples),
         'output/alpha_diversity.csv',
-        'output/multiqc_report.html',
+        'output/Taxonomic-Classification-Service-BVBRC_multiqc_report.html',
         'clean_up/multiqc_data',
         ]
 ## this adds felxiblity for one sample (1 single end fq or just one paired end, 2 fqs)
@@ -206,22 +206,23 @@ rule multiqc:
     input:
         multiqc_config = os.path.join(workflow_dir, "multiqc_config.yaml"),
     params:
-        landing_dir = 'output',
-        tmp_multiqc_dir = directory('output/multiqc_data')
+        landing_dir = 'output/.',
+        tmp_multiqc_report = "clean_up/multiqc_data/Taxonomic-Classification-Service-BVBRC_multiqc_report.html"
     output:
-        'output/multiqc_report.html',
+        out_multiqc_report = "output/Taxonomic-Classification-Service-BVBRC_multiqc_report.html",
         cl_multiqc_dir = directory('clean_up/multiqc_data')
     shell:
         '''
         multiqc --version
 
-        multiqc output/. \
+        mkdir -p {output.cl_multiqc_dir}
+
+        multiqc {params.landing_dir} \
             -c {input.multiqc_config} \
-            -o {params.landing_dir} --fullnames \
+            -o {output.cl_multiqc_dir} --fullnames \
             -f \
             --comment "This report contains information about the raw fastq files, host removed fastq files and kraken2 reports."
         
-        mkdir -p {output.cl_multiqc_dir}
 
-        mv {params.tmp_multiqc_dir} {output.cl_multiqc_dir}
+        mv {params.tmp_multiqc_report} {output.out_multiqc_report}
         '''
