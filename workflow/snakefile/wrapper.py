@@ -51,13 +51,12 @@ def load_hisat_indicies(input_dict, hisat_indicies_path, input_dir):
     else:
         host_indicies_file = os.path.join(hisat_indicies_path, input_dict["host_genome"])
         staging_indices_dir = os.path.join(input_dir, "indices_dir")
+        # shutil copy requires filename
         hisat_indicies= os.path.join(input_dir, "hisat_indicies")
         # cmd 1
-        dir_cmd = ["mkdir", "-p", "{}".format(staging_indices_dir)]
-        subprocess.run(dir_cmd)
+        os.makedirs(staging_indices_dir, exist_ok=True )
         # cmd 2
         shutil.copy(host_indicies_file, hisat_indicies)
-
         # cmd 3
         tar_cmd = ["tar", "-xvf", "{}".format(hisat_indicies)]
         subprocess.run(tar_cmd)
