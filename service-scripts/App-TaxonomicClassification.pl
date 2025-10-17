@@ -6,7 +6,8 @@
 
 use Bio::KBase::AppService::AppScript;
 use Bio::KBase::AppService::ReadSet;
-use Bio::KBase::AppService::AppConfig qw(metagenome_dbs);
+use Bio::KBase::AppService::AppConfig qw(metagenome_dbs application_backend_dir);
+
 use File::Slurp;
 use IPC::Run;
 use Cwd qw(abs_path getcwd);
@@ -89,6 +90,10 @@ sub process_read_input
     #
 
     my %config_vars;
+
+    my $data_dir = application_backend_dir . "/bvbrc_taxonomic_classification_2/data";
+    my $hisat2_indicies_path = "$data_dir/hisat2_indicies/";
+
     my $wf_dir = "$ENV{KB_TOP}/workflows/$ENV{KB_MODULE_DIR}";
     if (! -d $wf_dir)
     {
@@ -117,11 +122,13 @@ sub process_read_input
     }
     warn "Snakemake found at $snakemake\n";
     system($snakemake, "--version");
-    $config_vars{workflow_dir} = $wf_dir;
+
+    $config_vars{cores} = $ENV{P3_ALLOCATED_CPU} // 2;
+    $config_vars{hisat2_indicies_path} = $hisat2_indicies_path;
     $config_vars{input_data_dir} = $staging;
     $config_vars{output_data_dir} = $output;
     $config_vars{snakemake} = $snakemake;
-    $config_vars{cores} = $ENV{P3_ALLOCATED_CPU} // 2;
+    $config_vars{workflow_dir} = $wf_dir;
 
     #
     # Database selection
