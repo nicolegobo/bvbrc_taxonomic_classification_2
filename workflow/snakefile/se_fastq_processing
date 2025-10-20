@@ -1,4 +1,5 @@
 import sys
+
 #### running from service-script ####
 samples = glob_wildcards("staging/se_reads/{sample}.fastq.gz").sample
 msg = 'snakefile command recieved - SINGLE END FASTQ PROCESSING WGS \n'
