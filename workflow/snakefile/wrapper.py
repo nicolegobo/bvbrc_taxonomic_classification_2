@@ -86,7 +86,7 @@ def post_processing_check(all_sample_ids, output_dir):
         msg = f"Reliable kraken results produced for the following samples: {complete}. \n \
         Post Kraken processing complete"
         sys.stderr.write(msg)
-        return True
+        return Truegit pull --rebase origin main
 
 
 def preprocessing_check(input_dir, output_dir, input_dict):
@@ -130,7 +130,6 @@ def preprocessing_check(input_dir, output_dir, input_dict):
                 FASTQ Processing is complete for the following samples: {complete}. \n \
                 FASTQ Processing is INCOMPLETE for the following samples: **{incomplete}** \n"
         sys.stderr.write(msg)
-        sys.exit(1)
         ## return False
     else:
         msg = "preprocessing complete \n"
