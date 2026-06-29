@@ -86,7 +86,7 @@ def post_processing_check(all_sample_ids, output_dir):
         msg = f"Reliable kraken results produced for the following samples: {complete}. \n \
         Post Kraken processing complete"
         sys.stderr.write(msg)
-        return Truegit pull --rebase origin main
+        return True
 
 
 def preprocessing_check(input_dir, output_dir, input_dict):
