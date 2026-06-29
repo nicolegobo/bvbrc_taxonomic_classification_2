@@ -82,7 +82,6 @@ def post_processing_check(all_sample_ids, output_dir):
         msg = f"Reliable kraken results produced for the following samples: {complete}. \n \
                 Review the following samples: **{incomplete}** \n"
         sys.stderr.write(msg)
-        sys.exit(1)
     else:
         msg = f"Reliable kraken results produced for the following samples: {complete}. \n \
         Post Kraken processing complete"
@@ -131,7 +130,6 @@ def preprocessing_check(input_dir, output_dir, input_dict):
                 FASTQ Processing is complete for the following samples: {complete}. \n \
                 FASTQ Processing is INCOMPLETE for the following samples: **{incomplete}** \n"
         sys.stderr.write(msg)
-        sys.exit(1)
         ## return False
     else:
         msg = "preprocessing complete \n"
@@ -321,13 +319,13 @@ def set_up_sample_dictionary(input_dir, input_dict, output_dir, cores):
 def main(argv):
     params_file = argv[0]
     try:
-        fh = open(params_file)
+        fh = open(params_file, encoding="utf-8")
         config = json.load(fh)
         fh.close()
     except IOError:
         print(f"Could not read params file {params_file}")
         sys.exit(1)
-    except json.JasonDecodeError as e:
+    except json.JSONDecodeError as e:
         print(f"JSON parse error in pyfile {params_file}: {e}")
         sys.exit(1)
 
