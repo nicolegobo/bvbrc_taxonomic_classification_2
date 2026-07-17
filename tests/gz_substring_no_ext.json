@@ -1,0 +1,20 @@
+{
+    "paired_sample_id": "gz_substring_pair",
+    "single_sample_id": "",
+    "srr_sample_id": "",
+    "sequence_type": "sixteenS",
+    "database": "SILVA",
+    "confidence_interval": "0.1",
+    "save_classified_sequences": "false",
+    "save_unclassified_sequences": "false",
+    "output_path": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/",
+    "output_file": "workshop_gz_substring_no_ext",
+    "paired_end_libs": [
+        {
+            "read1": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/R1_001.fastq__1_.gz",
+            "read2": "/olson@patricbrc.org/PATRIC-QA/applications/App-TaxonomicClassification/data/R2_001.fastq__2_.gz",
+            "sample_id": "gz_substring_pair"
+        }
+    ],
+    "single_end_libs": []
+}
