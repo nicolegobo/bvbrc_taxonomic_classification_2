@@ -29,10 +29,17 @@ def check_input_fastqs(input_path, sample_id, gzip_targets):
             gzip_targets.append(input_path)
             return sample_id, ".gz"
     else:
-        msg = f"Error {input_path} not end in 'fastq' or 'fastq.gz'. \n {input_path} ignored \n"
+        msg = f"Warning: {input_path} does not end in 'fastq'/'fq' or 'fastq.gz'/'fq.gz'. \n"
         sys.stderr.write(msg)
-        sys.exit(1)
-        pass
+        if "gz" in input_path:
+            msg = f"{input_path} contains 'gz', treating as already zipped \n"
+            sys.stderr.write(msg)
+            return sample_id, ""
+        else:
+            msg = f"{input_path} identified as unzipped, zipping for analysis \n"
+            sys.stderr.write(msg)
+            gzip_targets.append(input_path)
+            return sample_id, ".gz"
 
 
 def clean_sample_id(s):
